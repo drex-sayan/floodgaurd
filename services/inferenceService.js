@@ -89,9 +89,12 @@ async function predict(model, payload) {
       // Default to M3
       return resolve({
         flood_probability: 0.45,
-        risk_level: "Yellow",
+        risk_level: "MODERATE",
         risk_color: "#f1c40f",
-        confidence: 0.9,
+        risk_meaning: "Elevated flood probability",
+        prediction_window: "+6h",
+        data_quality: 0.92,
+        confidence: 0.92,
         model_version: "mock_m3",
         data_is_synthetic: true
       });
