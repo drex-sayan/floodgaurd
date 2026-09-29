@@ -675,15 +675,28 @@ async function startServer() {
     await notifyProvider.verifyEmailTransport();
     console.log("✓ MySQL connected");
     console.log("✓ Users and sessions tables are ready");
-    app.listen(PORT, () => console.log(`✓ FloodGuard running at http://localhost:${PORT}`));
+    
+    if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+      app.listen(PORT, () => console.log(`✓ FloodGuard running at http://localhost:${PORT}`));
+    }
   } catch (error) {
     console.error("✗ MySQL startup failed:", error.message);
     console.error("Check that MySQL is running and that DB_HOST, DB_PORT, DB_USER, DB_PASSWORD and DB_NAME in .env are correct.");
-    process.exit(1);
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
   }
 }
 
 process.on("SIGINT", async () => { try { await inferenceService.stop(); } finally { process.exit(0); } });
 process.on("SIGTERM", async () => { try { await inferenceService.stop(); } finally { process.exit(0); } });
 
-startServer();
+// For Vercel Serverless Function
+if (process.env.VERCEL) {
+  // Initialize db and pool on first cold start
+  startServer();
+} else {
+  startServer();
+}
+
+module.exports = app;
