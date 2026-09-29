@@ -99,7 +99,11 @@ app.use(async (req, res, next) => {
       try {
         await dbInitPromise;
       } catch (err) {
-        return res.status(500).json({ message: "Database initialization failed during cold start." });
+        return res.status(500).json({ 
+          message: "Database initialization failed during cold start.", 
+          error: err.message,
+          host: process.env.DB_HOST // Helpful to verify if env vars are loaded
+        });
       }
     }
   }

@@ -20,12 +20,24 @@
   ],
   "routes": [
     {
+      "src": "/login",
+      "dest": "/login.html"
+    },
+    {
       "src": "/login.html",
       "dest": "/login.html"
     },
     {
+      "src": "/signup",
+      "dest": "/signup.html"
+    },
+    {
       "src": "/signup.html",
       "dest": "/signup.html"
+    },
+    {
+      "src": "/overview",
+      "dest": "/overview.html"
     },
     {
       "src": "/overview.html",
