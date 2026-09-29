@@ -684,13 +684,19 @@ app.use((req, res) => res.status(404).json({ message: "Route not found." }));
 
 async function startServer(isServerless = false) {
   try {
-    await createDatabaseIfNeeded();
+    if (!process.env.VERCEL) {
+      await createDatabaseIfNeeded();
+    }
+    
     createPool();
 
     const connection = await pool.getConnection();
     connection.release();
 
-    await initializeDatabase();
+    if (!process.env.VERCEL) {
+      await initializeDatabase();
+    }
+    
     await inferenceService.start();
     // Startup diagnostic only: this does not send an email. It makes SMTP
     // configuration failures visible before a demo alert is triggered.
