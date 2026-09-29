@@ -67,7 +67,7 @@ function createPool() {
     ...dbConfig,
     database: process.env.DB_NAME,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: process.env.VERCEL ? 1 : 10,
     queueLimit: 0
   });
 }
