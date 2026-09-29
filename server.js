@@ -88,6 +88,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// Vercel Serverless cold-start handler
+let dbInitPromise = null;
+app.use(async (req, res, next) => {
+  if (process.env.VERCEL) {
+    if (!pool) {
+      if (!dbInitPromise) {
+        dbInitPromise = startServer(true);
+      }
+      try {
+        await dbInitPromise;
+      } catch (err) {
+        return res.status(500).json({ message: "Database initialization failed during cold start." });
+      }
+    }
+  }
+  next();
+});
+
 const rateWindows = new Map();
 function fixedWindowLimit(limit, windowMs, message) {
   return (req, res, next) => {
@@ -660,7 +678,7 @@ app.use((err, req, res, next) => {
 });
 app.use((req, res) => res.status(404).json({ message: "Route not found." }));
 
-async function startServer() {
+async function startServer(isServerless = false) {
   try {
     await createDatabaseIfNeeded();
     createPool();
@@ -676,7 +694,7 @@ async function startServer() {
     console.log("✓ MySQL connected");
     console.log("✓ Users and sessions tables are ready");
     
-    if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    if (!isServerless && (process.env.NODE_ENV !== 'production' || !process.env.VERCEL)) {
       app.listen(PORT, () => console.log(`✓ FloodGuard running at http://localhost:${PORT}`));
     }
   } catch (error) {
@@ -685,17 +703,15 @@ async function startServer() {
     if (!process.env.VERCEL) {
       process.exit(1);
     }
+    throw error;
   }
 }
 
 process.on("SIGINT", async () => { try { await inferenceService.stop(); } finally { process.exit(0); } });
 process.on("SIGTERM", async () => { try { await inferenceService.stop(); } finally { process.exit(0); } });
 
-// For Vercel Serverless Function
-if (process.env.VERCEL) {
-  // Initialize db and pool on first cold start
-  startServer();
-} else {
+// For local development
+if (!process.env.VERCEL) {
   startServer();
 }
 
