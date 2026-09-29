@@ -20,6 +20,10 @@ function rejectAll(err) {
 }
 
 function start() {
+  if (process.env.VERCEL) {
+    console.warn("Python ML service skipped on Vercel. Mock predictions will be used.");
+    return Promise.resolve();
+  }
   if (child && !child.killed) return Promise.resolve();
   if (startPromise) return startPromise;
   startPromise = new Promise((resolve, reject) => {
@@ -66,6 +70,33 @@ function start() {
 async function predict(model, payload) {
   await start();
   return new Promise((resolve, reject) => {
+    if (process.env.VERCEL) {
+      if (model === "versions") return resolve({ "m3": "mock", "m4": "mock", "m5": "mock" });
+      if (model === "m4") return resolve({ 
+        landslide_probability: 0.15, 
+        risk_level: "Green", 
+        risk_color: "#2ecc71",
+        model_version: "mock_m4",
+        data_is_synthetic: true
+      });
+      if (model === "m5") return resolve({
+        forecast_1h: 0.55,
+        forecast_3h: 0.60,
+        forecast_6h: 0.65,
+        model_version: "mock_m5",
+        data_is_synthetic: true
+      });
+      // Default to M3
+      return resolve({
+        flood_probability: 0.45,
+        risk_level: "Yellow",
+        risk_color: "#f1c40f",
+        confidence: 0.9,
+        model_version: "mock_m3",
+        data_is_synthetic: true
+      });
+    }
+
     const id = nextId++;
     pending.set(id, { resolve, reject });
     try {
