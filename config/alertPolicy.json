@@ -1,0 +1,23 @@
+{
+  "_comment": "Alert Engine policy for the FloodGuard MVP. Edit this file to retune cooldowns or which channels fire per zone — no code changes required, just restart the server. 'outside' and 'green' never generate emergency alerts, so they have no entries below.",
+
+  "alert_policy_version": "alert-policy-v1.0",
+
+  "zone_severity": {
+    "outside": 0,
+    "green": 1,
+    "yellow": 2,
+    "red": 3
+  },
+
+  "channel_by_zone": {
+    "red": "both",
+    "yellow": "email"
+  },
+
+  "cooldown_minutes": {
+    "_comment": "Minimum time before an identical (user + location + zone) alert may resend. Also doubles as the 're-alert interval' for a user who remains in the same zone.",
+    "red": 60,
+    "yellow": 180
+  }
+}

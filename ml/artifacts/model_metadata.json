@@ -1,0 +1,90 @@
+{
+  "model_version": "M3-v1.0",
+  "model_type": "RandomForestClassifier + sigmoid probability calibration",
+  "target": "flash_flood_next_3h",
+  "prediction_window": "next 1-3 hours",
+  "features": [
+    "station_id",
+    "latitude",
+    "longitude",
+    "elevation_m",
+    "slope_deg",
+    "rainfall_1h",
+    "rainfall_3h",
+    "rainfall_6h",
+    "rainfall_12h",
+    "rainfall_24h",
+    "soil_moisture",
+    "moisture_change_3h",
+    "water_level_m",
+    "water_level_lag1h",
+    "water_level_lag3h",
+    "water_level_lag6h",
+    "water_level_change_1h",
+    "water_level_change_3h",
+    "rise_rate_m_per_hour",
+    "recent_event_count",
+    "event_proximity_km"
+  ],
+  "risk_thresholds": {
+    "LOW": "<0.30",
+    "MODERATE": "0.30-<0.60",
+    "HIGH": "0.60-<0.80",
+    "EXTREME": ">=0.80"
+  },
+  "validation_selected_threshold": 0.6217465006832831,
+  "random_seed": 42,
+  "data_is_synthetic": true,
+  "splits": {
+    "train_rows": 8400,
+    "validation_rows": 1800,
+    "test_rows": 1800
+  },
+  "metrics": {
+    "train": {
+      "threshold": 0.6217465006832831,
+      "accuracy": 0.9992857142857143,
+      "precision": 0.9956483899042646,
+      "recall": 0.9991266375545852,
+      "f1": 0.997384481255449,
+      "roc_auc": 0.9999962681963049,
+      "pr_auc": 0.999976386116905,
+      "brier_score": 0.0008755185460568998,
+      "tn": 7250,
+      "fp": 5,
+      "fn": 1,
+      "tp": 1144,
+      "positive_rate": 0.1363095238095238
+    },
+    "validation": {
+      "threshold": 0.6217465006832831,
+      "accuracy": 0.9955555555555555,
+      "precision": 0.9940828402366864,
+      "recall": 0.9824561403508771,
+      "f1": 0.9882352941176471,
+      "roc_auc": 0.9996590699428041,
+      "pr_auc": 0.9987091068240773,
+      "brier_score": 0.004040154805898068,
+      "tn": 1456,
+      "fp": 2,
+      "fn": 6,
+      "tp": 336,
+      "positive_rate": 0.19
+    },
+    "test": {
+      "threshold": 0.6217465006832831,
+      "accuracy": 0.9933333333333333,
+      "precision": 0.98,
+      "recall": 0.9607843137254902,
+      "f1": 0.9702970297029703,
+      "roc_auc": 0.9987898668239226,
+      "pr_auc": 0.9923763915876049,
+      "brier_score": 0.006487727767459277,
+      "tn": 1592,
+      "fp": 4,
+      "fn": 8,
+      "tp": 196,
+      "positive_rate": 0.11333333333333333
+    }
+  }
+}

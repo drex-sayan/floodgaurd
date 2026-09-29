@@ -1,0 +1,14 @@
+{
+  "_comment": "FloodGuard data-freshness policy. Edit this file to retune how quickly each reading type is considered stale/expired — no code changes required, just restart the server (same reload rule as config/zonePolicy.json and config/coverage.json). This generalizes the age check the Zone Engine already does for water-level readings (see config/zonePolicy.json's water_level_rise_adjustment.max_data_age_minutes) into one shared policy every module can read from utils/freshness.js. 'stale_after_minutes' is when a badge first turns amber; 'expired_after_minutes' is when it turns red and the reading should no longer be trusted as current. These are prototype placeholder numbers, not validated operational thresholds — see FINAL FloodGuard sign-off process before any operational use.",
+
+  "freshness_policy_version": "freshness-policy-v1.0",
+
+  "default": { "stale_after_minutes": 30, "expired_after_minutes": 120 },
+
+  "thresholds": {
+    "rainfall_readings":      { "stale_after_minutes": 30, "expired_after_minutes": 120 },
+    "water_level_readings":   { "stale_after_minutes": 15, "expired_after_minutes": 60 },
+    "soil_moisture_readings": { "stale_after_minutes": 60, "expired_after_minutes": 240 },
+    "cctv_events":            { "stale_after_minutes": 60, "expired_after_minutes": 240 }
+  }
+}

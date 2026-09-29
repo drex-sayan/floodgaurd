@@ -1,0 +1,16 @@
+{
+  "calibration_id": "CCTV-04-2026-09",
+  "camera_id": "CCTV-04",
+  "location_id": 1,
+  "units": "m",
+  "image_size": { "width": 640, "height": 480 },
+  "search_column_px": 320,
+  "search_band_px": { "top": 60, "bottom": 440 },
+  "reference_points": [
+    { "pixel_y": 400, "elevation_m": 10.00, "label": "low reference mark" },
+    { "pixel_y": 120, "elevation_m": 13.50, "label": "high reference mark" }
+  ],
+  "strip_width_px": 5,
+  "smoothing_px": 5,
+  "notes": "Illustrative MVP calibration for CCTV-04 (Rampur river crossing), mapped to location_id 1 (Chamoli, Uttarakhand seed location). Placed by hand against ml/m1/mock_images/ stills, not a real survey. Re-do against the actual camera before any real deployment."
+}

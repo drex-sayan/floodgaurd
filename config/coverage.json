@@ -1,0 +1,21 @@
+{
+  "_comment": "MVP hard-coded allow-list of regions where the M3 flash-flood model has been validated. A location is 'covered' only if it matches one of these entries — either by falling inside the lat/lon bounding box, or by a text match on place_name/region. Everything else must be reported as 'unsupported'. Do not widen this list without updating it alongside real model validation coverage.",
+
+  "supported_regions": [
+    {
+      "model_region": "Chamoli-Uttarakhand-M3",
+      "model_version": "M3-v1.0",
+      "label": "Chamoli district, Uttarakhand",
+      "match": {
+        "place_name_contains": ["chamoli"],
+        "region_contains": ["uttarakhand"],
+        "bbox": {
+          "lat_min": 29.8,
+          "lat_max": 31.0,
+          "lon_min": 78.6,
+          "lon_max": 80.0
+        }
+      }
+    }
+  ]
+}

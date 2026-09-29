@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>FloodGuard — Sign In</title><link rel="stylesheet" href="/style.css"></head>
+<body><div class="brand"><div class="brand-icon">≈</div>FloodGuard</div>
+<main class="auth-page"><section class="card"><h1>Welcome back</h1><p class="subtitle">Sign in to your FloodGuard account</p>
+<div id="success" class="success"></div><form id="loginForm">
+<div class="field"><label>Email Address</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><input id="email" type="email" placeholder="you@example.com"></div></div>
+<div class="field"><label>Password</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="password" type="password" placeholder="Enter your password"></div></div>
+<div id="formError" class="error"></div><button id="loginBtn" class="btn" type="submit">Sign In</button></form>
+<div class="divider">OR</div><button class="social" type="button">ⓖ &nbsp; Continue with Google</button>
+<div class="footer">Don't have an account? <a href="/signup">Sign up</a></div></section></main>
+<script src="/auth.js"></script><script>redirectIfAuthenticated();</script><script>document.getElementById("loginForm").addEventListener("submit",login);</script></body></html>

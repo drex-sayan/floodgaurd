@@ -1,0 +1,25 @@
+{
+  "_comment": "Zone Engine severity policy for the FloodGuard MVP. Edit this file to retune the Red/Yellow/Green risk rings — no code changes required, just restart the server (same reload rule as config/coverage.json). base_radius_km gives the starting radius per M3 risk band. water_level_rise_adjustment widens those radii only when a fresh, good-quality water_level_readings row for the location crosses a configured rise-rate tier; tiers must stay sorted ascending by min_rise_rate_m_per_hr. These are prototype placeholder numbers, not validated emergency thresholds — see FINAL FloodGuard sign-off process before any operational use.",
+
+  "zone_policy_version": "zone-policy-v1.0",
+
+  "base_radius_km": {
+    "LOW": { "red": 0.3, "yellow": 1.0, "green": 2.5 },
+    "MODERATE": { "red": 0.6, "yellow": 2.0, "green": 4.5 },
+    "HIGH": { "red": 1.2, "yellow": 3.5, "green": 7.0 },
+    "EXTREME": { "red": 2.0, "yellow": 5.5, "green": 10.0 }
+  },
+
+  "water_level_rise_adjustment": {
+    "_comment": "A reading only counts as usable if quality_status equals required_quality_status AND its timestamp is within max_data_age_minutes of 'now'. Otherwise the engine falls back to base_radius_km unmodified and reports degraded_confidence: true.",
+    "required_quality_status": "good",
+    "max_data_age_minutes": 45,
+    "tiers": [
+      { "min_rise_rate_m_per_hr": 0.10, "multiplier": { "red": 1.20, "yellow": 1.15, "green": 1.05 } },
+      { "min_rise_rate_m_per_hr": 0.25, "multiplier": { "red": 1.45, "yellow": 1.30, "green": 1.10 } },
+      { "min_rise_rate_m_per_hr": 0.50, "multiplier": { "red": 1.80, "yellow": 1.50, "green": 1.20 } }
+    ]
+  },
+
+  "rounding_decimals": 2
+}

@@ -1,0 +1,2430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloodGuard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg0:#040711; --bg1:#0a1830; --bg2:#020408;
+    --pink:#2f8fff; --pink-dim:#0d3a66; --violet:#1f6fe0;
+    --amber:#f6b04d; --red:#ff6b7a; --teal:#3fd7bd;
+    --text-hi:#f5eef7; --text-mid:#b6a2bc; --text-lo:#7c6a83;
+    --glass:rgba(255,255,255,0.045); --glass-strong:rgba(255,255,255,0.08);
+    --border:rgba(255,255,255,0.09); --radius:20px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Inter',sans-serif; color:var(--text-hi); min-height:100vh;
+    background:
+      radial-gradient(1000px 750px at 0% 0%, rgba(47,143,255,0.4), transparent 58%),
+      radial-gradient(900px 700px at 100% 100%, rgba(47,143,255,0.32), transparent 55%),
+      linear-gradient(135deg, var(--bg1), var(--bg2) 55%, var(--bg0));
+  }
+  .app{display:flex; min-height:100vh;}
+
+  .rail{
+    width:220px; flex-shrink:0; margin:18px 0 18px 18px; padding:22px 16px;
+    background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+    backdrop-filter:blur(22px) saturate(140%); -webkit-backdrop-filter:blur(22px) saturate(140%);
+    display:flex; flex-direction:column; height:calc(100vh - 36px);
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:0 4px 26px 4px;}
+  .brand-mark{width:32px; height:32px; border-radius:9px; background:linear-gradient(145deg,var(--pink),var(--violet));
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 0 20px rgba(47,143,255,0.4);}
+  .brand-name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px;}
+  nav{display:flex; flex-direction:column; gap:4px;}
+  .nav-item{display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:13px;
+    color:var(--text-mid); font-size:13.5px; font-weight:500; cursor:pointer; transition:background .18s,color .18s;}
+  .nav-item svg{width:17px; height:17px; opacity:.8;}
+  .nav-item:hover{background:rgba(255,255,255,0.05); color:var(--text-hi);}
+  .nav-item.active{background:linear-gradient(120deg,var(--pink),var(--violet)); color:#fff; box-shadow:0 6px 18px rgba(47,143,255,0.28);}
+  .nav-item.active svg{opacity:1;}
+  .rail-footer{margin-top:auto; display:flex; flex-direction:column; gap:4px;}
+
+  .main{flex:1; padding:22px 26px 26px; min-width:0;}
+
+  .topbar{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:14px;}
+  .welcome{font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:600;}
+  .welcome span{color:var(--pink);}
+  .welcome-sub{font-size:13px; color:var(--text-lo); margin-top:4px;}
+  .top-actions{display:flex; align-items:center; gap:10px;}
+  .icon-btn{width:38px; height:38px; border-radius:12px; background:var(--glass); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;}
+  .icon-btn svg{width:17px; height:17px; color:var(--text-mid);}
+  .icon-btn .badge-dot{position:absolute; top:7px; right:8px; width:6px; height:6px; border-radius:50%; background:var(--pink);}
+  .profile{display:flex; align-items:center; gap:9px; padding:5px 14px 5px 5px; background:var(--glass); border:1px solid var(--border); border-radius:13px;}
+  .profile .avatar{width:30px; height:30px; border-radius:50%; background:linear-gradient(145deg,#5ab8ff,#0d3a66); flex-shrink:0;}
+  .profile-name{font-size:12.5px; font-weight:600;}
+  .profile-role{font-size:11px; color:var(--text-lo);}
+
+  .pill-row{display:flex; gap:8px; margin-bottom:18px;}
+  .pill{padding:9px 18px; border-radius:12px; font-size:13px; font-weight:500; color:var(--text-mid); background:var(--glass);
+    border:1px solid var(--border); cursor:pointer;}
+  .pill.active{background:linear-gradient(120deg,var(--pink),var(--violet)); color:#fff; border-color:transparent;}
+  .ask-bar{flex:1; display:flex; align-items:center; gap:10px; padding:9px 18px; border-radius:12px; background:var(--glass);
+    border:1px solid var(--border); color:var(--text-lo); font-size:13px;}
+  .ask-bar svg{width:15px; height:15px;}
+
+  .card{background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+    backdrop-filter:blur(20px) saturate(140%); -webkit-backdrop-filter:blur(20px) saturate(140%); padding:20px; position:relative; overflow:hidden;}
+  .card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; position:relative; z-index:1;}
+  .card-title{font-family:'Space Grotesk',sans-serif; font-size:14.5px; font-weight:600;}
+  .card-link{font-size:12px; color:var(--pink); font-weight:500; cursor:pointer;}
+
+  .grid3{display:grid; grid-template-columns:1.05fr 1fr 1fr; gap:16px; margin-bottom:16px;}
+  .stack{display:flex; flex-direction:column; gap:16px;}
+
+  .risk-blob{position:absolute; width:260px; height:260px; border-radius:50%;
+    background:radial-gradient(circle, rgba(47,143,255,0.35), transparent 70%); top:-90px; right:-90px; filter:blur(6px);}
+  .dropdown{font-size:11.5px; color:var(--text-mid); background:rgba(255,255,255,0.06); padding:5px 10px; border-radius:8px; display:flex; align-items:center; gap:5px;}
+  .big-num{font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:600; margin:6px 0 4px; position:relative; z-index:1;}
+  .big-sub{font-size:12.5px; color:var(--text-mid); position:relative; z-index:1;}
+  .trend-chip{display:inline-flex; align-items:center; gap:4px; background:rgba(17,17,17,0.08); color:var(--red);
+    font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:8px; margin-top:8px;}
+
+  .ai-card{background:linear-gradient(135deg, rgba(47,143,255,0.16), rgba(31,111,224,0.12));}
+  .ai-title{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; margin-bottom:6px;}
+  .ai-sub{font-size:12.5px; color:var(--text-mid); line-height:1.55; margin-bottom:14px; max-width:220px;}
+  .ai-btn{display:inline-block; background:linear-gradient(120deg,var(--pink),var(--violet)); color:#fff; font-size:12.5px;
+    font-weight:600; padding:9px 16px; border-radius:11px; cursor:pointer;}
+
+  /* --- Select Location & Model Coverage panel --- */
+  .loc-panel{margin-bottom:16px;}
+  .loc-method-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px;}
+  .loc-method-btn{display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; font-size:12.5px;
+    font-weight:600; color:var(--text-mid); background:rgba(255,255,255,0.045); border:1px solid var(--border); cursor:pointer;}
+  .loc-method-btn svg{width:15px; height:15px;}
+  .loc-method-btn:hover{background:rgba(255,255,255,0.08); color:var(--text-hi);}
+  .loc-method-btn.active{background:linear-gradient(120deg,var(--pink),var(--violet)); color:#fff; border-color:transparent;}
+  .loc-subpanel{display:none; margin-top:14px;}
+  .loc-subpanel.active{display:block;}
+  .loc-search-row{display:flex; gap:8px;}
+  .loc-search-row input{flex:1; padding:10px 13px; border-radius:11px; border:1px solid var(--border);
+    background:rgba(255,255,255,.045); color:var(--text-hi); font:13px 'Inter',sans-serif; outline:none;}
+  .loc-search-row input:focus{border-color:rgba(47,143,255,.75); box-shadow:0 0 0 3px rgba(47,143,255,.12);}
+  .loc-search-row button, .loc-inline-btn{border:0; border-radius:11px; padding:10px 16px; background:linear-gradient(120deg,var(--pink),var(--violet));
+    color:#fff; font:600 12.5px 'Inter',sans-serif; cursor:pointer; white-space:nowrap;}
+  .loc-inline-btn[disabled]{opacity:.4; cursor:not-allowed; filter:grayscale(.3);}
+  .loc-pick-map-wrap{position:relative; height:260px; border-radius:14px; overflow:hidden; background:#0a1830; margin-top:2px;}
+  #pickLocationMap{position:absolute; inset:0; width:100%; height:100%;}
+  .loc-pick-hint{position:absolute; z-index:600; top:10px; left:10px; background:rgba(5,12,25,.9); border:1px solid rgba(255,255,255,.12);
+    padding:6px 11px; border-radius:9px; font-size:11px; color:#cfe0ff; pointer-events:none;}
+  .loc-pick-confirm-row{display:flex; justify-content:flex-end; margin-top:10px;}
+  .loc-status{font-size:12px; color:var(--text-lo); margin-top:8px; min-height:16px;}
+  .loc-status.error{color:var(--red);}
+  .loc-resolved{display:none; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08);
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;}
+  .loc-resolved.show{display:flex;}
+  .loc-resolved-info .loc-resolved-name{font-size:14px; font-weight:600;}
+  .loc-resolved-info .loc-resolved-meta{font-size:11.5px; color:var(--text-lo); margin-top:3px; font-family:'JetBrains Mono',monospace;}
+  .coverage-badge{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; padding:8px 14px; border-radius:11px;}
+  .coverage-badge.checking{background:rgba(255,255,255,0.06); color:var(--text-mid);}
+  .coverage-badge.covered{background:rgba(63,215,189,0.14); color:var(--teal);}
+  .coverage-badge.unsupported{background:rgba(255,107,122,0.14); color:var(--red);}
+  .coverage-dot{width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0;}
+  .predict-row{margin-top:14px; display:none; align-items:center; gap:10px;}
+  .predict-row.show{display:flex;}
+  .predict-result{font-size:12px; color:var(--text-mid);}
+
+  .tab-mini{display:flex; gap:6px; margin-bottom:12px;}
+  .tab-mini span{font-size:11.5px; color:var(--text-lo); padding:5px 11px; border-radius:8px; cursor:pointer;}
+  .tab-mini span.active{background:rgba(255,255,255,0.08); color:var(--text-hi);}
+  .watch-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06);}
+  .watch-row:last-child{border-bottom:none;}
+  .wr-icon{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .wr-icon svg{width:15px; height:15px;}
+  .wr-body{flex:1; min-width:0;}
+  .wr-name{font-size:13px; font-weight:600;}
+  .wr-sub{font-size:11px; color:var(--text-lo); margin-top:1px;}
+  .wr-right{text-align:right;}
+  .wr-val{font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600;}
+  .wr-chg{font-size:11px; font-weight:600; margin-top:2px;}
+  .chg-up{color:var(--red);} .chg-down{color:var(--teal);}
+
+  .ward-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .ward-card{background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:14px; padding:12px;}
+  .ward-icon{width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:9px;}
+  .ward-icon svg{width:13px; height:13px;}
+  .ward-val{font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600;}
+  .ward-chg{font-size:11px; font-weight:600; margin-top:2px;}
+  .ward-lbl{font-size:10.5px; color:var(--text-lo); margin-top:6px;}
+  .ward-lbl b{color:var(--text-mid); font-weight:500;}
+
+  .chart-card{margin-bottom:16px;}
+  .range-row{display:flex; gap:6px;}
+  .range-pill{font-size:11.5px; color:var(--text-lo); padding:6px 12px; border-radius:9px; cursor:pointer;}
+  .range-pill.active{background:rgba(255,255,255,0.09); color:var(--text-hi);}
+  .chart-wrap{position:relative; height:230px;}
+
+
+  .logout-btn{width:100%;display:flex;align-items:center;gap:12px;padding:11px 12px;margin-top:8px;border-radius:13px;border:1px solid rgba(255,107,122,.25);background:rgba(255,107,122,.08);color:#ff9aa5;font:600 13px 'Inter',sans-serif;cursor:pointer;}
+  .logout-btn:hover{background:rgba(255,107,122,.16);color:#fff}.logout-btn svg{width:17px;height:17px}
+  .settings-grid,.support-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.form-row{margin-bottom:15px}.form-label{display:block;font-size:12px;color:var(--text-mid);margin-bottom:7px;font-weight:600}
+  .form-input,.form-select,.form-textarea{width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--border);background:rgba(255,255,255,.045);color:var(--text-hi);font:13px 'Inter',sans-serif;outline:none}
+  .form-select option{background:#0a1830;color:#fff}.form-textarea{min-height:110px;resize:vertical}.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:rgba(47,143,255,.75);box-shadow:0 0 0 3px rgba(47,143,255,.12)}
+  .section-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:4px}.section-sub{font-size:12px;color:var(--text-lo);margin-bottom:18px}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06)}.toggle-row:last-child{border-bottom:0}
+  .toggle-copy b{display:block;font-size:13px}.toggle-copy span{font-size:11.5px;color:var(--text-lo);display:block;margin-top:3px}.switch{position:relative;width:44px;height:24px}.switch input{display:none}.slider{position:absolute;inset:0;border-radius:99px;background:rgba(255,255,255,.12);cursor:pointer}.slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s}.switch input:checked+.slider{background:var(--pink)}.switch input:checked+.slider:before{transform:translateX(20px)}
+  .primary-btn{border:0;border-radius:11px;padding:10px 16px;background:linear-gradient(120deg,var(--pink),var(--violet));color:#fff;font:600 12.5px 'Inter',sans-serif;cursor:pointer}.primary-btn:hover{filter:brightness(1.08)}
+  .status-msg{font-size:12px;margin-top:12px;color:var(--teal);min-height:16px}.faq{border-bottom:1px solid rgba(255,255,255,.07);padding:13px 0}.faq-q{display:flex;justify-content:space-between;gap:12px;cursor:pointer;font-size:13px;font-weight:600}.faq-a{display:none;font-size:12px;line-height:1.55;color:var(--text-mid);padding-top:8px}.faq.open .faq-a{display:block}.support-card{margin-bottom:16px}
+  @media(max-width:1000px){.settings-grid,.support-grid{grid-template-columns:1fr}}
+
+  /* --- Alert history panel (Overview) --- */
+  .alert-history-card{margin-top:16px;}
+  .alert-history-status{font-size:12.5px; color:var(--text-lo); padding:4px 0;}
+  .alert-history-status.error{color:var(--red);}
+  .alert-history-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .alert-history-table th{text-align:left; color:var(--text-lo); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.03em; padding:8px 10px; border-bottom:1px solid var(--border);}
+  .alert-history-table td{padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text-hi);}
+  .alert-history-table tr:last-child td{border-bottom:0;}
+  .zone-pill{display:inline-block; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:600; text-transform:capitalize;}
+  .zone-pill.red{background:rgba(255,107,122,0.16); color:var(--red);}
+  .zone-pill.yellow{background:rgba(246,176,77,0.18); color:var(--amber);}
+  .status-pill{display:inline-block; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:600; text-transform:capitalize;}
+  .status-pill.sent{background:rgba(63,215,189,0.16); color:var(--teal);}
+  .status-pill.failed{background:rgba(255,107,122,0.16); color:var(--red);}
+  .status-pill.skipped_cooldown{background:rgba(255,255,255,0.08); color:var(--text-mid);}
+
+  .view{display:none;} .view.active{display:block; animation:fade .4s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  .simple-card-title{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; margin-bottom:14px;}
+  .loc-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06);}
+  .loc-row:last-child{border-bottom:none;}
+  .loc-name{font-size:13.5px; font-weight:600;}
+  .loc-meta{font-size:11.5px; color:var(--text-lo); margin-top:2px;}
+  .loc-risk{font-family:'JetBrains Mono',monospace; font-weight:600; font-size:14px;}
+  .map-big{width:100%;height:430px;min-height:430px;position:relative;overflow:hidden;display:block;isolation:isolate;}
+  #riskMap{position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;width:100%!important;height:430px!important;min-height:430px!important;display:block!important;z-index:1;}
+  #riskMap.leaflet-container{background:#0a1830;font-family:'Inter',sans-serif;}
+  #riskMap .leaflet-map-pane,#riskMap .leaflet-tile-pane{width:auto!important;height:auto!important;}
+  .map-toolbar{position:absolute;z-index:700;top:14px;left:14px;right:14px;display:flex;gap:8px;align-items:center;pointer-events:none;}
+  .map-search-wrap{position:relative;pointer-events:auto;flex:1;max-width:360px;z-index:705}
+  .map-search{width:100%;display:flex;align-items:center;gap:8px;background:rgba(5,12,25,.94);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:9px 12px;box-shadow:0 8px 25px rgba(0,0,0,.28)}
+  .map-search:focus-within{border-color:rgba(47,143,255,.8);box-shadow:0 0 0 3px rgba(47,143,255,.12),0 8px 25px rgba(0,0,0,.28)}
+  .map-search input{flex:1;border:0;outline:0;background:transparent;color:var(--text-hi);font:12.5px 'Inter',sans-serif;min-width:0}.map-search input::placeholder{color:#8b96aa}
+  .map-search-results{display:none;position:absolute;top:calc(100% + 7px);left:0;right:0;max-height:255px;overflow:auto;background:rgba(8,17,32,.98);border:1px solid rgba(255,255,255,.13);border-radius:11px;box-shadow:0 14px 35px rgba(0,0,0,.38);padding:5px;z-index:706}
+  .map-search-results.show{display:block}.map-search-result{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--text-hi);padding:10px 11px;border-radius:8px;cursor:pointer;font:12px 'Inter',sans-serif}.map-search-result:hover,.map-search-result.active{background:rgba(47,143,255,.14)}
+  .map-search-result small{display:block;color:var(--text-dim);font-size:10.5px;margin-top:3px}.map-search-result .search-type{float:right;color:var(--blue);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+  .map-search-empty{padding:11px;color:var(--text-dim);font-size:11.5px}
+  .map-btn{pointer-events:auto;border:1px solid rgba(255,255,255,.14);background:rgba(5,12,25,.9);color:#dbe8ff;border-radius:10px;padding:9px 11px;font:600 12px 'Inter',sans-serif;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,.25)}.map-btn:hover{background:#10254a}
+  .map-status{position:absolute;z-index:700;top:66px;left:14px;background:rgba(5,12,25,.88);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:7px 10px;font-size:11px;color:#aab7ca;display:none}
+  .zone-legend{position:absolute;z-index:700;top:66px;right:14px;max-width:220px;background:rgba(5,12,25,.92);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:11px 13px;font-size:11.5px;color:#dbe8ff;display:none;box-shadow:0 8px 25px rgba(0,0,0,.28);}
+  .zone-legend-title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;margin-bottom:7px;color:var(--text-hi);}
+  .zone-legend-row{display:flex;align-items:center;gap:7px;margin:4px 0;}
+  .zone-legend-row i{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.05);}
+  .zone-legend-note{margin-top:7px;color:var(--amber);font-size:10.5px;line-height:1.45;}
+  .zone-legend-disclaimer{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:#93a3bd;line-height:1.4;font-style:italic;}
+  .risk-marker{width:18px;height:18px;border-radius:50%;border:3px solid rgba(255,255,255,.95);box-shadow:0 0 0 5px rgba(0,0,0,.16),0 3px 10px rgba(0,0,0,.35);}
+  .risk-marker.high{background:#ff6b7a}.risk-marker.medium{background:#f6b04d}.risk-marker.low{background:#3fd7bd}.risk-marker.user{background:#2f8fff;width:16px;height:16px}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0b1830;color:#eef5ff}.leaflet-popup-content{margin:12px 14px;font-family:'Inter',sans-serif}.map-popup b{font-size:13px}.map-popup span{display:block;color:#aab7ca;font-size:11px;margin-top:4px}.map-popup strong{display:block;margin-top:7px;font-family:'JetBrains Mono',monospace}
+  .loc-row{cursor:pointer;transition:.18s;padding-left:6px;padding-right:6px;border-radius:10px}.loc-row:hover,.loc-row.selected{background:rgba(47,143,255,.10)}
+
+  .alert-row{display:flex; gap:14px; padding:15px 4px; border-bottom:1px solid rgba(255,255,255,0.06); align-items:flex-start;}
+  .alert-row:last-child{border-bottom:none;}
+  .sev-bar{width:3px; align-self:stretch; border-radius:2px;}
+  .sev-high{background:var(--red);} .sev-med{background:var(--amber);} .sev-info{background:var(--violet);}
+  .alert-title{font-size:14px; font-weight:600;}
+  .alert-meta{font-size:11.5px; color:var(--text-lo); margin-top:3px;}
+  .alert-desc{font-size:12.5px; color:var(--text-mid); margin-top:5px;}
+  .badge{font-size:11px; font-weight:600; padding:4px 10px; border-radius:8px;}
+  .badge-high{background:rgba(17,17,17,0.08); color:var(--red);}
+  .badge-med{background:rgba(102,102,102,0.10); color:var(--amber);}
+  .badge-info{background:rgba(31,111,224,0.16); color:var(--violet);}
+
+  .cam-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px;}
+  .cam-feed{height:110px; border-radius:12px; background:linear-gradient(160deg,#0a1830,#020408); display:flex; align-items:center; justify-content:center; position:relative; margin-bottom:12px;}
+  .cam-feed svg{width:26px; height:26px; opacity:0.3;}
+  .cam-status{position:absolute; top:9px; left:9px; font-size:10px; font-weight:700; padding:3px 8px; border-radius:7px;}
+  .cam-live{background:rgba(63,215,189,0.9); color:#052a23;}
+  .cam-stale{background:rgba(246,176,77,0.9); color:#3a2500;}
+  .cam-offline{background:rgba(255,255,255,0.14); color:var(--text-mid);}
+  .cam-name{font-size:13px; font-weight:600;} .cam-loc{font-size:11.5px; color:var(--text-lo); margin-top:2px;}
+
+  /* --- Overview page reorganization: items 1-7 --- */
+
+  /* 2. Selected Location card */
+  .selected-location-card{margin-bottom:16px;}
+  .selected-location-empty{font-size:12.5px; color:var(--text-lo); padding:4px 0;}
+
+  /* 3. M3 Flood Prediction card */
+  .m3-card{margin-bottom:16px;}
+  .synthetic-badge{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--amber);
+    background:rgba(246,176,77,0.14); border:1px solid rgba(246,176,77,0.3); padding:6px 11px; border-radius:10px;}
+  .synthetic-badge svg{width:13px; height:13px;}
+  .m3-empty{font-size:12.5px; color:var(--text-lo); padding:4px 0 14px; position:relative; z-index:1;}
+  .m3-stats-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .m3-stat-wide{grid-column:span 2;}
+  .m3-stat{background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:14px; padding:14px 16px;}
+  .m3-stat-label{font-size:11px; color:var(--text-lo); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;}
+  .m3-stat-value{font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:600;}
+  .m3-risk-level{font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; text-transform:capitalize;}
+  .m3-risk-level.risk-low{color:var(--teal);}
+  .m3-risk-level.risk-moderate{color:var(--amber);}
+  .m3-risk-level.risk-high,.m3-risk-level.risk-extreme{color:var(--red);}
+  .predict-row-inline{display:flex; align-items:center; gap:12px; margin-top:16px;}
+  @media(max-width:800px){.m3-stats-grid{grid-template-columns:1fr 1fr;} .m3-stat-wide{grid-column:span 2;}}
+
+  /* 4. Supporting module cards (M1, M2, M4, M5 are live prototypes; all structurally separate from M3) */
+  .module-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px;}
+  .module-card{background:rgba(255,255,255,0.025); border:1px dashed var(--border); border-radius:16px; padding:16px; text-align:left;}
+  .module-tag{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:var(--text-mid);
+    background:rgba(255,255,255,0.06); display:inline-block; padding:3px 9px; border-radius:7px; margin-bottom:10px;}
+  .module-name{font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text-mid);}
+  .module-status{font-size:11px; font-weight:600; color:var(--text-lo); text-transform:uppercase; letter-spacing:.03em;}
+  @media(max-width:800px){.module-row{grid-template-columns:1fr 1fr;}}
+
+  /* M1 card: prototype, but real (mock-image-derived) data — differs visually
+     from M1's. M4 uses its own solid-border/violet-accent treatment (see module-card-m4). */
+  .module-card-m1{border-style:solid; border-color:rgba(63,215,189,0.25); background:rgba(63,215,189,0.04);}
+  .module-card-m1 .module-tag{background:rgba(63,215,189,0.16); color:var(--teal);}
+  .m1-empty{font-size:11.5px; color:var(--text-lo); line-height:1.5;}
+  .m1-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; margin:4px 0 8px;}
+  .m1-stat-label{font-size:10px; color:var(--text-lo); text-transform:uppercase; letter-spacing:.03em;}
+  .m1-stat-value{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; color:var(--text-hi);}
+  .m1-meta{font-size:10.5px; color:var(--text-lo); margin-bottom:8px; line-height:1.5;}
+  .m1-badge{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--amber); background:rgba(246,176,77,0.14); border-radius:6px; padding:2px 7px; margin-bottom:8px;}
+  .m1-run-btn{font-size:11px; font-weight:600; color:var(--teal); background:rgba(63,215,189,0.12);
+    border:1px solid rgba(63,215,189,0.3); border-radius:8px; padding:6px 10px; cursor:pointer; width:100%;}
+  .m1-run-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .m1-run-status{font-size:10.5px; color:var(--text-lo); margin-top:6px; min-height:14px;}
+
+  /* M5 card: supporting water-level forecast module — same "real but
+     prototype" visual treatment as M1, distinct accent color so the two
+     supporting modules are easy to tell apart at a glance. */
+  .module-card-m5{border-style:solid; border-color:rgba(47,143,255,0.25); background:rgba(47,143,255,0.04);}
+  .module-card-m5 .module-tag{background:rgba(47,143,255,0.16); color:var(--pink);}
+  .m5-empty{font-size:11.5px; color:var(--text-lo); line-height:1.5;}
+  .m5-stats{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:4px 0 8px;}
+  .m5-stat-label{font-size:9.5px; color:var(--text-lo); text-transform:uppercase; letter-spacing:.03em;}
+  .m5-stat-value{font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; color:var(--text-hi);}
+  .m5-chart-wrap{position:relative; height:64px; margin:6px 0 8px;}
+  .m5-badge{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--amber); background:rgba(246,176,77,0.14); border-radius:6px; padding:2px 7px; margin-bottom:8px;}
+  .m5-meta{font-size:10.5px; color:var(--text-lo); margin-bottom:8px; line-height:1.5;}
+  .m5-run-btn{font-size:11px; font-weight:600; color:var(--pink); background:rgba(47,143,255,0.12);
+    border:1px solid rgba(47,143,255,0.3); border-radius:8px; padding:6px 10px; cursor:pointer; width:100%;}
+  .m5-run-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .m5-run-status{font-size:10.5px; color:var(--text-lo); margin-top:6px; min-height:14px;}
+
+  /* M2 card: rule-based anomaly/event detector, standing in for a real
+     video-based classifier (see services/m2Detect.js) — same "real but
+     prototype" treatment as M1/M5, amber accent so it reads as an
+     operational/alerting module rather than a forecast one. */
+  .module-card-m2{border-style:solid; border-color:rgba(246,176,77,0.3); background:rgba(246,176,77,0.045);}
+  .module-card-m2 .module-tag{background:rgba(246,176,77,0.18); color:var(--amber);}
+  .m2-empty{font-size:11.5px; color:var(--text-lo); line-height:1.5;}
+  .m2-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; margin:4px 0 8px;}
+  .m2-stat-label{font-size:10px; color:var(--text-lo); text-transform:uppercase; letter-spacing:.03em;}
+  .m2-stat-value{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; color:var(--text-hi);}
+  .m2-event-type{text-transform:capitalize;}
+  .m2-event-type.rapid_water_rise, .m2-event-type.combined_surge{color:var(--red);}
+  .m2-event-type.heavy_rainfall{color:var(--amber);}
+  .m2-meta{font-size:10.5px; color:var(--text-lo); margin-bottom:8px; line-height:1.5;}
+  .m2-badge{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--amber); background:rgba(246,176,77,0.14); border-radius:6px; padding:2px 7px; margin-bottom:8px;}
+  .m2-run-btn{font-size:11px; font-weight:600; color:var(--amber); background:rgba(246,176,77,0.12);
+    border:1px solid rgba(246,176,77,0.3); border-radius:8px; padding:6px 10px; cursor:pointer; width:100%;}
+  .m2-run-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .m2-run-status{font-size:10.5px; color:var(--text-lo); margin-top:6px; min-height:14px;}
+
+  /* M4 card: landslide hazard estimate — separate supporting hazard
+     module, same "real but prototype" treatment as M1/M2/M5, violet
+     accent so it reads as its own distinct hazard signal rather than
+     a flood-probability variant. */
+  .module-card-m4{border-style:solid; border-color:rgba(31,111,224,0.3); background:rgba(31,111,224,0.045);}
+  .module-card-m4 .module-tag{background:rgba(31,111,224,0.18); color:var(--violet);}
+  .m4-empty{font-size:11.5px; color:var(--text-lo); line-height:1.5;}
+  .m4-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; margin:4px 0 8px;}
+  .m4-stat-label{font-size:10px; color:var(--text-lo); text-transform:uppercase; letter-spacing:.03em;}
+  .m4-stat-value{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; color:var(--text-hi);}
+  .m4-risk-level{text-transform:capitalize;}
+  .m4-risk-level.LOW{color:var(--teal);}
+  .m4-risk-level.MODERATE{color:var(--amber);}
+  .m4-risk-level.HIGH,.m4-risk-level.EXTREME{color:var(--red);}
+  .m4-meta{font-size:10.5px; color:var(--text-lo); margin-bottom:8px; line-height:1.5;}
+  .m4-badge{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--amber); background:rgba(246,176,77,0.14); border-radius:6px; padding:2px 7px; margin-bottom:8px;}
+  .m4-run-btn{font-size:11px; font-weight:600; color:var(--violet); background:rgba(31,111,224,0.12);
+    border:1px solid rgba(31,111,224,0.3); border-radius:8px; padding:6px 10px; cursor:pointer; width:100%;}
+  .m4-run-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .m4-run-status{font-size:10.5px; color:var(--text-lo); margin-top:6px; min-height:14px;}
+
+  /* 6. Zone Status / User Location */
+  .zone-status-card{margin-bottom:16px;}
+  .zone-status-body{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;}
+  .zone-status-current{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .zone-status-text{font-size:12.5px; color:var(--text-mid);}
+  .zone-pill.green{background:rgba(63,215,189,0.16); color:var(--teal);}
+  .zone-pill.outside{background:rgba(255,255,255,0.08); color:var(--text-mid);}
+
+  /* 7. Alerts panel: Your Alerts + Authority Alerts */
+  .alerts-split-row{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; align-items:start;}
+  .authority-alerts-placeholder{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    gap:8px; padding:34px 18px; border:1px dashed var(--border); border-radius:16px; color:var(--text-lo);}
+  .authority-alerts-placeholder svg{width:26px; height:26px; opacity:.5;}
+  .authority-alerts-title{font-family:'Space Grotesk',sans-serif; font-size:13.5px; font-weight:600; color:var(--text-mid);}
+  .authority-alerts-sub{font-size:11.5px; max-width:260px; line-height:1.5;}
+  @media(max-width:1000px){.alerts-split-row{grid-template-columns:1fr;}}
+
+  /* Authority Alerts (M2 operational events): visually distinct from the
+     user-facing "Your Alerts" panel — amber card border/wash instead of
+     the neutral glass card, and its own op-pill badge (event type) rather
+     than zone-pill/status-pill, so the two lists are never confused. */
+  .authority-alerts-card{border-color:rgba(246,176,77,0.22); background:rgba(246,176,77,0.03);}
+  .authority-alerts-status{font-size:12.5px; color:var(--text-lo); padding:4px 0;}
+  .authority-alerts-status.error{color:var(--red);}
+  .authority-alerts-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .authority-alerts-table th{text-align:left; color:var(--text-lo); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.03em; padding:8px 10px; border-bottom:1px solid var(--border);}
+  .authority-alerts-table td{padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text-hi);}
+  .authority-alerts-table tr:last-child td{border-bottom:0;}
+  .op-pill{display:inline-block; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:600; text-transform:capitalize; border:1px solid transparent;}
+  .op-pill.rapid_water_rise, .op-pill.combined_surge{background:rgba(255,107,122,0.16); color:var(--red); border-color:rgba(255,107,122,0.3);}
+  .op-pill.heavy_rainfall{background:rgba(246,176,77,0.18); color:var(--amber); border-color:rgba(246,176,77,0.35);}
+  .op-source-tag{font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--text-lo);}
+
+  /* Persistent prototype disclaimer footer */
+  .prototype-disclaimer{display:flex; align-items:center; gap:10px; margin-top:8px; padding:12px 16px; border-radius:14px;
+    background:rgba(246,176,77,0.08); border:1px solid rgba(246,176,77,0.22); color:#f2c98a; font-size:11.5px; line-height:1.5;}
+  .prototype-disclaimer svg{width:16px; height:16px; flex-shrink:0;}
+
+  /* Realtime data-freshness badges + degraded-confidence banners — shared
+     across the M3 card, the M1/M2/M4/M5 module cards, and the zone/geofence
+     panels. See utils/freshness.js for how status is classified server-side. */
+  .freshness-badge{display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700;
+    letter-spacing:.02em; text-transform:uppercase; padding:3px 8px; border-radius:8px; white-space:nowrap; margin:2px 4px 2px 0;}
+  .freshness-badge .fb-dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0;}
+  .freshness-badge.fresh{background:rgba(63,215,189,0.14); color:var(--teal);}
+  .freshness-badge.stale{background:rgba(246,176,77,0.16); color:var(--amber);}
+  .freshness-badge.expired{background:rgba(255,107,122,0.14); color:var(--red);}
+  .freshness-badge.missing{background:rgba(255,255,255,0.06); color:var(--text-mid);}
+  .degraded-banner{margin-top:6px; font-size:11px; color:var(--amber); display:flex; align-items:center; gap:6px; line-height:1.4;}
+  .degraded-banner:empty{display:none;}
+
+  /* Live-polling indicator, top of the dashboard */
+  .live-indicator{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--text-mid); margin-left:10px;}
+  .live-indicator .live-dot{width:7px; height:7px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 0 rgba(63,215,189,0.6); animation:live-pulse 2s infinite;}
+  .live-indicator.paused .live-dot{background:var(--text-lo); animation:none;}
+  @keyframes live-pulse{
+    0%{box-shadow:0 0 0 0 rgba(63,215,189,0.5);}
+    70%{box-shadow:0 0 0 6px rgba(63,215,189,0);}
+    100%{box-shadow:0 0 0 0 rgba(63,215,189,0);}
+  }
+
+  /* Dev/demo-only mock sensor feed panel */
+  .dev-only-card{border:1px dashed rgba(246,176,77,0.4); background:rgba(246,176,77,0.04);}
+  .dev-only-tag{display:inline-flex; align-items:center; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--amber); background:rgba(246,176,77,0.14); padding:4px 9px; border-radius:8px; margin-left:auto;}
+  .dev-sensor-copy{font-size:12px; color:var(--text-mid); line-height:1.5; margin:8px 0 12px;}
+  .dev-sensor-auto-row{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-mid); margin-top:10px; cursor:pointer; user-select:none;}
+  .dev-sensor-status{font-size:11.5px; color:var(--text-lo); margin-top:8px; min-height:14px;}
+  .dev-sensor-status.error{color:var(--red);}
+
+  @media (max-width:1000px){
+    .rail{display:none;} .grid3{grid-template-columns:1fr;} .ward-grid{grid-template-columns:1fr 1fr;}
+  }
+
+
+  .zone-demo-alert-btn{margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;border:1px solid rgba(255,107,122,.45);background:rgba(255,107,122,.12);color:#ffd7dc;font:600 11px 'Inter',sans-serif;cursor:pointer;}
+  .zone-demo-alert-btn:hover{background:rgba(255,107,122,.2);}
+  .zone-demo-alert-btn.yellow{border-color:rgba(246,176,77,.45);background:rgba(246,176,77,.12);color:#ffe6bd;}
+  .zone-demo-alert-banner{position:fixed;right:22px;top:22px;z-index:5000;max-width:390px;padding:14px 16px;border-radius:12px;background:#0b1830;border:1px solid rgba(255,107,122,.55);box-shadow:0 12px 35px rgba(0,0,0,.4);color:#eef5ff;display:none;}
+  .zone-demo-alert-banner.show{display:block;}
+  .zone-demo-alert-banner .title{font-weight:700;font-size:13px;margin-bottom:5px;}
+  .zone-demo-alert-banner .body{font-size:11.5px;line-height:1.45;color:#b9c8dc;}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div class="brand-name">FloodGuard</div>
+    </div>
+    <nav>
+      <div class="nav-item active" data-view="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Dashboard</div>
+      <div class="nav-item" data-view="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 20L3 17V4l6 3m0 13l6-3m-6 3V7m6 10l6 3V7l-6-3m0 13V4m0 3L9 4"/></svg>Risk map</div>
+      <div class="nav-item" data-view="alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>Alerts</div>
+      <div class="nav-item" data-view="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg>Cameras</div>
+    </nav>
+    <div class="rail-footer">
+      <div class="nav-item" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.6V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.6-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.6V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.6 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.6 1z"/></svg>Settings</div>
+      <div class="nav-item" data-view="support"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 0c0 1.5-2 1.8-2 3.3M12 17h.01"/></svg>Support</div>
+      <button class="logout-btn" type="button" onclick="confirmLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 00-2-2h-7"/></svg>Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="welcome">Welcome, <span id="userName">Operator</span></div>
+        <div class="welcome-sub" id="pageSub">Here's your ward monitoring overview</div>
+      </div>
+      <span class="live-indicator paused" id="liveIndicator"><span class="live-dot"></span><span id="liveIndicatorText">Live updates off</span></span>
+      <div class="top-actions">
+        <div class="icon-btn"><span class="badge-dot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
+        <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9M4.6 9a1.7 1.7 0 00-.3-1.9"/></svg></div>
+        <div class="profile">
+          <div class="avatar"></div>
+          <div><div class="profile-name" id="profileName">Operator</div><div class="profile-role">District operator</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pill-row">
+      <div class="pill active" data-view="overview">Dashboard</div>
+      <div class="pill" data-view="map">Risk map</div>
+      <div class="pill" data-view="alerts">Alerts</div>
+      <div class="ask-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Ask FloodGuard AI anything</div>
+    </div>
+
+    <section class="view active" id="view-overview">
+
+      <!-- 1. Select Location -->
+      <div class="card loc-panel">
+        <div class="card-head"><div class="card-title">1 · Select Location</div></div>
+
+        <div class="loc-method-row">
+          <div class="loc-method-btn" data-method="current" id="btnMethodCurrent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            Use My Current Location
+          </div>
+          <div class="loc-method-btn" data-method="search" id="btnMethodSearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            Search Location
+          </div>
+          <div class="loc-method-btn" data-method="map" id="btnMethodMap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20L3 17V4l6 3m0 13l6-3m-6 3V7m6 10l6 3V7l-6-3m0 13V4m0 3L9 4"/></svg>
+            Pick on Map
+          </div>
+        </div>
+
+        <div class="loc-subpanel" id="locSubpanelSearch">
+          <div class="loc-search-row">
+            <input type="text" id="locSearchInput" placeholder="Search for a place, town or district…" autocomplete="off">
+            <button type="button" id="locSearchGoBtn">Search</button>
+          </div>
+        </div>
+
+        <div class="loc-subpanel" id="locSubpanelMap">
+          <div class="loc-pick-map-wrap">
+            <div id="pickLocationMap"></div>
+            <div class="loc-pick-hint">Click the map to drop a marker</div>
+          </div>
+          <div class="loc-pick-confirm-row">
+            <button type="button" class="loc-inline-btn" id="locConfirmMapBtn" disabled>Confirm location</button>
+          </div>
+        </div>
+
+        <div class="loc-status" id="locStatus"></div>
+      </div>
+
+      <!-- 2. Selected Location + Model Coverage badge -->
+      <div class="card selected-location-card" id="selectedLocationCard">
+        <div class="card-head"><div class="card-title">2 · Selected Location</div></div>
+        <div class="selected-location-empty" id="selectedLocationEmpty">No location selected yet — use one of the methods above to choose where FloodGuard should monitor.</div>
+        <div class="loc-resolved" id="locResolved">
+          <div class="loc-resolved-info">
+            <div class="loc-resolved-name" id="locResolvedName">—</div>
+            <div class="loc-resolved-meta" id="locResolvedMeta">—</div>
+          </div>
+          <div class="coverage-badge checking" id="coverageBadge">
+            <span class="coverage-dot"></span><span id="coverageBadgeText">Checking model coverage…</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. M3 Flood Prediction card -->
+      <div class="card m3-card" id="m3PredictionCard">
+        <div class="risk-blob"></div>
+        <div class="card-head">
+          <div class="card-title">3 · M3 Flood Prediction</div>
+          <span class="synthetic-badge" id="syntheticBadge" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+            Synthetic/demo data
+          </span>
+        </div>
+
+        <div class="m3-empty" id="m3Empty">Showing a demo prediction below. Select a covered location above and run the model for a live result.</div>
+
+        <div class="m3-body" id="m3Body" style="position:relative; z-index:1;">
+          <div class="m3-stats-grid">
+            <div class="m3-stat m3-stat-wide">
+              <div class="m3-stat-label">Flood probability</div>
+              <div class="big-num" id="m3Probability">—</div>
+              <div class="big-sub" id="m3RiskMeaning">—</div>
+            </div>
+            <div class="m3-stat">
+              <div class="m3-stat-label">Risk level</div>
+              <div class="m3-risk-level" id="m3RiskLevel">—</div>
+            </div>
+            <div class="m3-stat">
+              <div class="m3-stat-label">Prediction window</div>
+              <div class="m3-stat-value" id="m3Window">—</div>
+            </div>
+            <div class="m3-stat">
+              <div class="m3-stat-label">Confidence</div>
+              <div class="m3-stat-value" id="m3Confidence">—</div>
+            </div>
+            <div class="m3-stat">
+              <div class="m3-stat-label">Data quality</div>
+              <div class="m3-stat-value" id="m3DataQuality">—</div>
+            </div>
+          </div>
+          <div id="m3FreshnessRow" style="margin-top:10px;"></div>
+          <div class="degraded-banner" id="m3DegradedBanner"></div>
+        </div>
+
+        <div class="predict-row show" id="predictRow" style="position:relative; z-index:1;">
+          <button type="button" class="loc-inline-btn" id="predictBtn" disabled>Run M3 prediction for this location</button>
+          <span class="predict-result" id="predictResult"></span>
+        </div>
+      </div>
+
+      <!-- 4. Supporting module cards (M1, M2, M4, M5 — all live prototypes, structurally separate from M3) -->
+      <div class="module-row">
+        <div class="module-card module-card-m1">
+          <div class="module-tag">M1</div>
+          <div class="module-name">Water-Level Vision (prototype)</div>
+          <div class="m1-badge">Calibration prototype — not a validated gauge</div>
+
+          <div class="m1-empty" id="m1Empty">Select a location above to see the nearest camera's water-level estimate.</div>
+
+          <div id="m1Data" style="display:none;">
+            <div class="m1-stats">
+              <div>
+                <div class="m1-stat-label">Level (est.)</div>
+                <div class="m1-stat-value" id="m1Level">—</div>
+              </div>
+              <div>
+                <div class="m1-stat-label">Rise rate</div>
+                <div class="m1-stat-value" id="m1RiseRate">—</div>
+              </div>
+              <div>
+                <div class="m1-stat-label">Δ 10m / 30m / 1h</div>
+                <div class="m1-stat-value" id="m1Changes" style="font-size:11.5px;">—</div>
+              </div>
+              <div>
+                <div class="m1-stat-label">Vision confidence</div>
+                <div class="m1-stat-value" id="m1Confidence">—</div>
+              </div>
+            </div>
+            <div class="m1-meta" id="m1Meta"></div>
+            <div id="m1FreshnessRow"></div>
+            <div class="degraded-banner" id="m1DegradedBanner"></div>
+          </div>
+
+          <button type="button" class="m1-run-btn" id="m1RunBtn" disabled>Run M1 estimate (mock frame)</button>
+          <div class="m1-run-status" id="m1RunStatus"></div>
+        </div>
+        <div class="module-card module-card-m2">
+          <div class="module-tag">M2</div>
+          <div class="module-name">Anomaly / Event Detector</div>
+          <div class="m2-badge">Rule-based prototype — not video-based classification</div>
+
+          <div class="m2-empty" id="m2Empty">Select a location above to see its latest M2 event check.</div>
+
+          <div id="m2Data" style="display:none;">
+            <div class="m2-stats">
+              <div>
+                <div class="m2-stat-label">Event type</div>
+                <div class="m2-stat-value"><span class="m2-event-type" id="m2EventType">—</span></div>
+              </div>
+              <div>
+                <div class="m2-stat-label">Confidence</div>
+                <div class="m2-stat-value" id="m2Confidence">—</div>
+              </div>
+              <div>
+                <div class="m2-stat-label">Anomaly score</div>
+                <div class="m2-stat-value" id="m2Score">—</div>
+              </div>
+              <div>
+                <div class="m2-stat-label">Detected</div>
+                <div class="m2-stat-value" id="m2Detected" style="font-size:11.5px;">—</div>
+              </div>
+            </div>
+            <div class="m2-meta" id="m2Meta"></div>
+            <div id="m2FreshnessRow"></div>
+            <div class="degraded-banner" id="m2DegradedBanner"></div>
+          </div>
+
+          <button type="button" class="m2-run-btn" id="m2RunBtn" disabled>Run M2 check (mock data)</button>
+          <div class="m2-run-status" id="m2RunStatus"></div>
+        </div>
+        <div class="module-card module-card-m4">
+          <div class="module-tag">M4</div>
+          <div class="module-name">Landslide Hazard Estimate</div>
+          <span class="m4-badge">Synthetic label — context only, separate from flood probability</span>
+
+          <div class="m4-empty" id="m4Empty">Select a location above to see its M4 landslide hazard estimate.</div>
+
+          <div id="m4Data" style="display:none;">
+            <div class="m4-stats">
+              <div>
+                <div class="m4-stat-label">Hazard level</div>
+                <div class="m4-stat-value"><span class="m4-risk-level" id="m4RiskLevel">—</span></div>
+              </div>
+              <div>
+                <div class="m4-stat-label">Probability</div>
+                <div class="m4-stat-value" id="m4Probability">—</div>
+              </div>
+            </div>
+            <div class="m4-meta" id="m4Meta"></div>
+            <div id="m4FreshnessRow"></div>
+            <div class="degraded-banner" id="m4DegradedBanner"></div>
+          </div>
+
+          <button type="button" class="m4-run-btn" id="m4RunBtn" disabled>Run M4 hazard check</button>
+          <div class="m4-run-status" id="m4RunStatus"></div>
+        </div>
+        <div class="module-card module-card-m5">
+          <div class="module-tag">M5</div>
+          <div class="module-name">Water-Level Forecasting</div>
+          <span class="m5-badge" id="m5SyntheticBadge" style="display:none;">Synthetic/demo data</span>
+
+          <div class="m5-empty" id="m5Empty">Select a location above to run an M5 forecast.</div>
+
+          <div id="m5Data" style="display:none;">
+            <div class="m5-stats">
+              <div>
+                <div class="m5-stat-label">Now</div>
+                <div class="m5-stat-value" id="m5Now">—</div>
+              </div>
+              <div>
+                <div class="m5-stat-label">+1h</div>
+                <div class="m5-stat-value" id="m5Plus1h">—</div>
+              </div>
+              <div>
+                <div class="m5-stat-label">+3h</div>
+                <div class="m5-stat-value" id="m5Plus3h">—</div>
+              </div>
+            </div>
+            <div class="m5-chart-wrap"><canvas id="m5Chart"></canvas></div>
+            <div class="m5-meta" id="m5Meta"></div>
+            <div id="m5FreshnessRow"></div>
+            <div class="degraded-banner" id="m5DegradedBanner"></div>
+          </div>
+
+          <button type="button" class="m5-run-btn" id="m5RunBtn" disabled>Run M5 forecast</button>
+          <div class="m5-run-status" id="m5RunStatus"></div>
+        </div>
+      </div>
+
+      <!-- 5. Risk Map -->
+      <div class="card" style="padding:14px;" id="riskMapSection">
+        <div class="card-head" style="padding:6px 8px 0;"><div class="card-title">5 · Risk Map</div></div>
+        <div class="map-big" id="mapBigSlot" style="height:430px; border-radius:14px; overflow:hidden; background:#0a1830; position:relative; margin-top:8px;">
+          <div id="riskMap" style="width:100%;height:100%;" aria-label="FloodGuard risk map"></div>
+          <div class="map-toolbar">
+            <div class="map-search-wrap">
+              <div class="map-search"><span>⌕</span><input id="mapLocationSearch" type="text" autocomplete="off" placeholder="Search monitored location or place" aria-label="Search monitored location or place"></div>
+              <div id="mapSearchResults" class="map-search-results" role="listbox"></div>
+            </div>
+            <button class="map-btn" onclick="focusAllLocations()">All locations</button>
+            <button class="map-btn" onclick="locateUser()">My location</button>
+          </div>
+          <div id="mapStatus" class="map-status"></div>
+          <div id="zoneLegend" class="zone-legend"></div>
+          <div style="position:absolute; z-index:700; bottom:14px; left:14px; display:flex; gap:14px; font-size:11.5px; color:var(--text-mid); background:rgba(5,12,25,0.88); border:1px solid rgba(255,255,255,.1); padding:7px 12px; border-radius:10px; pointer-events:none;">
+            <span><i style="background:#ff6b7a; width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px;"></i>High</span>
+            <span><i style="background:#f6b04d; width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px;"></i>Medium</span>
+            <span><i style="background:#3fd7bd; width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px;"></i>Low</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Zone Status / User Location -->
+      <div class="card zone-status-card" id="zoneStatusCard">
+        <div class="card-head"><div class="card-title">6 · Zone Status</div></div>
+        <div class="zone-status-body">
+          <div class="zone-status-current">
+            <span class="zone-pill outside" id="zoneStatusPill">Not checked</span>
+            <span class="zone-status-text" id="zoneStatusText">Check whether your current position falls inside a risk zone for the selected location.</span>
+          </div>
+          <button type="button" class="loc-inline-btn" id="checkZoneBtn">Check my current zone</button>
+        </div>
+        <div class="loc-status" id="zoneStatusStatus"></div>
+        <div id="zoneStatusFreshnessRow"></div>
+      </div>
+
+      <!-- Dev/demo-only mock sensor feed — see services/mockSensorFeed.js.
+           Inserts synthetic rainfall/water-level/soil-moisture readings so
+           the realtime polling loop above has fresh data during a demo.
+           NOT a real IoT ingestion pipeline. -->
+      <div class="card dev-only-card" id="devSensorFeedCard">
+        <div class="card-head" style="display:flex; align-items:center;">
+          <div class="card-title">Dev-only · Mock Sensor Feed</div>
+          <span class="dev-only-tag">Demo — not real IoT</span>
+        </div>
+        <div class="dev-sensor-copy">
+          Inserts one new mock rainfall / water-level / soil-moisture reading for the selected location, so the
+          realtime polling above has something new to show. Standing in for a real sensor push — not a real
+          ingestion pipeline. All rows are tagged <code>source: dev_mock_sensor_feed</code>.
+        </div>
+        <button type="button" class="loc-inline-btn" id="devSensorFeedBtn" disabled>Insert mock sensor reading</button>
+        <label class="dev-sensor-auto-row">
+          <input type="checkbox" id="devSensorAutoToggle" disabled>
+          Auto-insert every 60s while this location is selected (demo only)
+        </label>
+        <div class="dev-sensor-status" id="devSensorFeedStatus"></div>
+      </div>
+
+      <!-- 7. Alerts panel: Your Alerts + Authority Alerts -->
+      <div class="alerts-split-row" id="alertsSection">
+        <div class="card alert-history-card">
+          <div class="card-head">
+            <div class="card-title">7a · Your Alerts</div>
+            <span class="card-link" id="alertHistoryRefresh">Refresh</span>
+          </div>
+          <div class="alert-history-status" id="alertHistoryStatus">Loading your alert history…</div>
+          <table class="alert-history-table" id="alertHistoryTable" style="display:none;">
+            <thead>
+              <tr><th>Time</th><th>Location</th><th>Zone</th><th>Channel</th><th>Status</th></tr>
+            </thead>
+            <tbody id="alertHistoryBody"></tbody>
+          </table>
+        </div>
+
+        <div class="card authority-alerts-card">
+          <div class="card-head">
+            <div class="card-title">7b · Authority Alerts</div>
+            <span class="card-link" id="authorityAlertsRefresh">Refresh</span>
+          </div>
+          <div class="authority-alerts-status" id="authorityAlertsStatus">Loading operational alerts…</div>
+          <table class="authority-alerts-table" id="authorityAlertsTable" style="display:none;">
+            <thead>
+              <tr><th>Time</th><th>Location</th><th>Event</th><th>Confidence</th><th>Score</th></tr>
+            </thead>
+            <tbody id="authorityAlertsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="card-head">
+          <div class="card-title">Historical risk trend (demo)</div>
+          <div class="range-row">
+            <div class="range-pill">3H</div><div class="range-pill">12H</div><div class="range-pill active">1D</div><div class="range-pill">1W</div><div class="range-pill">1M</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="riskChart"></canvas></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-cameras">
+      <div class="cam-grid">
+        <div class="card"><div class="cam-feed"><span class="cam-status cam-live">Live</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg></div><div class="cam-name">CCTV-04</div><div class="cam-loc">Rampur river crossing</div></div>
+        <div class="card"><div class="cam-feed"><span class="cam-status cam-stale">Stale</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg></div><div class="cam-name">CCTV-07</div><div class="cam-loc">Sonapur bridge</div></div>
+        <div class="card"><div class="cam-feed"><span class="cam-status cam-offline">Offline</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg></div><div class="cam-name">CCTV-02</div><div class="cam-loc">Devgram road</div></div>
+        <div class="card"><div class="cam-feed"><span class="cam-status cam-live">Live</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg></div><div class="cam-name">CCTV-09</div><div class="cam-loc">Hillview culvert</div></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <div class="settings-grid">
+        <div class="card">
+          <div class="section-title">Monitoring preferences</div>
+          <div class="section-sub">Configure how FloodGuard displays and delivers monitoring information.</div>
+          <div class="form-row"><label class="form-label">Default monitored location</label><select id="defaultLocation" class="form-select"><option>Rampur, Ward 4</option><option>Sonapur</option><option>Devgram</option><option>Hillview</option></select></div>
+          <div class="form-row"><label class="form-label">Risk alert threshold</label><select id="riskThreshold" class="form-select"><option value="60">60% — Early warning</option><option value="70">70% — Elevated risk</option><option value="80">80% — Critical only</option></select></div>
+          <div class="form-row"><label class="form-label">Dashboard refresh</label><select id="refreshRate" class="form-select"><option value="30">Every 30 seconds</option><option value="60">Every minute</option><option value="300">Every 5 minutes</option></select></div>
+          <button class="primary-btn" type="button" onclick="saveSettings()">Save settings</button>
+          <div class="status-msg" id="settingsStatus"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Notifications</div>
+          <div class="section-sub">Choose which alerts you want to receive.</div>
+          <div class="toggle-row"><div class="toggle-copy"><b>High-risk alerts</b><span>Immediate flood-risk notifications</span></div><label class="switch"><input id="highAlerts" type="checkbox" checked><span class="slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-copy"><b>Medium-risk alerts</b><span>Elevated hazard updates</span></div><label class="switch"><input id="mediumAlerts" type="checkbox" checked><span class="slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-copy"><b>Camera notifications</b><span>Offline and stale camera updates</span></div><label class="switch"><input id="cameraAlerts" type="checkbox"><span class="slider"></span></label></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Alert delivery</div>
+          <div class="section-sub">FloodGuard sends a Red-zone SMS/email alert and a Yellow-zone preparedness notice automatically when you enter a monitored risk ring. Choose how you want to receive them.</div>
+          <div class="toggle-row"><div class="toggle-copy"><b>SMS alerts</b><span>Text message on Red/Yellow zone entry</span></div><label class="switch"><input id="smsEnabled" type="checkbox"><span class="slider"></span></label></div>
+          <div class="form-row"><label class="form-label">Phone number</label><input id="phoneNumber" class="form-input" type="tel" placeholder="+1 555 000 1111"></div>
+          <div class="toggle-row"><div class="toggle-copy"><b>Email alerts</b><span>Email on Red/Yellow zone entry</span></div><label class="switch"><input id="emailEnabled" type="checkbox" checked><span class="slider"></span></label></div>
+          <div class="form-row"><label class="form-label">Email address</label><input id="emailAddress" class="form-input" type="email" placeholder="you@example.com"></div>
+          <button class="primary-btn" type="button" onclick="saveNotificationPrefs()">Save alert preferences</button>
+          <div class="status-msg" id="notifPrefsStatus"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-support">
+      <div class="support-grid">
+        <div class="card support-card">
+          <div class="section-title">FloodGuard Support</div>
+          <div class="section-sub">Find answers or send a message to the project support team.</div>
+          <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">How does FloodGuard calculate risk?<span>+</span></div><div class="faq-a">FloodGuard combines available monitoring signals such as rainfall, water level, terrain and camera evidence to present a risk estimate.</div></div>
+          <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">Why is my dashboard showing a warning?<span>+</span></div><div class="faq-a">Warnings appear when monitored evidence crosses the configured risk thresholds or when an important data-quality issue is detected.</div></div>
+          <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">How do I change my alert preferences?<span>+</span></div><div class="faq-a">Open Settings from the sidebar, change your monitoring and notification preferences, and select Save settings.</div></div>
+          <div class="faq"><div class="faq-q" onclick="toggleFaq(this)">How do I log out?<span>+</span></div><div class="faq-a">Use the Logout button at the bottom of the left sidebar. Your current session will be securely cleared.</div></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Contact support</div>
+          <div class="section-sub">Send a support request from the dashboard.</div>
+          <div class="form-row"><label class="form-label">Subject</label><input id="supportSubject" class="form-input" placeholder="Describe the issue briefly"></div>
+          <div class="form-row"><label class="form-label">Message</label><textarea id="supportMessage" class="form-textarea" placeholder="Tell us what happened and what you need help with."></textarea></div>
+          <button class="primary-btn" type="button" onclick="submitSupport()">Send request</button>
+          <div class="status-msg" id="supportStatus"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="prototype-disclaimer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+      This is a decision-support prototype using synthetic/demonstration data. It is not a validated real-world emergency warning system.
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/auth.js"></script>
+
+<script>
+  // ---------------------------------------------------------------------
+  // Shared data-freshness rendering helpers — used by the M3 card, the
+  // M1/M2/M4/M5 module cards, and the zone/geofence panels. The shapes
+  // rendered here come straight from utils/freshness.js on the backend:
+  //   classifyFreshness() -> { available, status, age_seconds, ... }
+  //   evaluateFreshnessGate() -> { degraded_confidence, degraded_confidence_reason, freshness }
+  // Nothing here recomputes freshness client-side — it only displays
+  // whatever the API already classified, so the badge can never disagree
+  // with the degraded_confidence flag driving it.
+  // ---------------------------------------------------------------------
+  var FRESHNESS_LABELS = { fresh: 'Fresh', stale: 'Stale', expired: 'Expired', missing: 'No data' };
+
+  function fmtAge(seconds) {
+    var s = Number(seconds);
+    if (!isFinite(s)) return '';
+    if (s < 90) return Math.max(0, Math.round(s)) + 's ago';
+    var m = s / 60;
+    if (m < 90) return Math.round(m) + 'm ago';
+    var h = m / 60;
+    return (Math.round(h * 10) / 10) + 'h ago';
+  }
+
+  // Renders one badge for a single classifyFreshness() result.
+  function freshnessBadgeHtml(freshness, label) {
+    if (!freshness) return '';
+    var status = (freshness.available === false ? 'missing' : freshness.status) || 'missing';
+    var text = FRESHNESS_LABELS[status] || 'Unknown';
+    var ageText = (freshness.available && freshness.age_seconds !== null && freshness.age_seconds !== undefined)
+      ? ' · ' + fmtAge(freshness.age_seconds) : '';
+    return '<span class="freshness-badge ' + status + '"><span class="fb-dot"></span>' +
+      (label ? escHtmlG(label) + ': ' : '') + text + ageText + '</span>';
+  }
+
+  // Renders a row of badges from an evaluateFreshnessGate().freshness map,
+  // e.g. { rainfall: {...}, water_level: {...}, soil_moisture: {...} }.
+  // Order is fixed so the same inputs always line up the same way.
+  var FRESHNESS_ROW_ORDER = [
+    ['rainfall', 'Rainfall'],
+    ['water_level', 'Water level'],
+    ['soil_moisture', 'Soil moisture']
+  ];
+  function freshnessRowHtml(freshnessMap) {
+    if (!freshnessMap) return '';
+    var html = '';
+    FRESHNESS_ROW_ORDER.forEach(function (pair) {
+      if (freshnessMap[pair[0]]) html += freshnessBadgeHtml(freshnessMap[pair[0]], pair[1]);
+    });
+    return html;
+  }
+
+  function degradedBannerHtml(degraded, reason) {
+    if (!degraded) return '';
+    var reasonText = reason ? String(reason).split(',').join(', ').replace(/_/g, ' ') : '';
+    return '⚠ Degraded confidence' + (reasonText ? ' — ' + escHtmlG(reasonText) : '') +
+      ' — one or more inputs are stale, expired, or missing.';
+  }
+
+  function escHtmlG(v) {
+    return String(v).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  // Sets a card's freshness-row + degraded-banner pair from a response
+  // that carries either a single `data_freshness` classifyFreshness()
+  // result (M1) or a `data_freshness` map from evaluateFreshnessGate()
+  // (M3/M4/M5), plus top-level degraded_confidence/degraded_confidence_reason.
+  function renderFreshnessAndDegraded(prefix, data, singleLabel) {
+    var rowEl = document.getElementById(prefix + 'FreshnessRow');
+    var bannerEl = document.getElementById(prefix + 'DegradedBanner');
+    if (!rowEl || !bannerEl) return;
+    if (!data) { rowEl.innerHTML = ''; bannerEl.textContent = ''; return; }
+
+    var freshness = data.data_freshness;
+    if (freshness && (freshness.status !== undefined)) {
+      // Single classifyFreshness() result (M1-style).
+      rowEl.innerHTML = freshnessBadgeHtml(freshness, singleLabel);
+    } else if (freshness) {
+      // Map of multiple inputs (M3/M4/M5-style).
+      rowEl.innerHTML = freshnessRowHtml(freshness);
+    } else {
+      rowEl.innerHTML = '';
+    }
+    bannerEl.textContent = degradedBannerHtml(data.degraded_confidence, data.degraded_confidence_reason);
+  }
+</script>
+
+<script>
+  // Model-level metadata (not tied to any one prediction) — used to show
+  // the "Synthetic/demo data" badge on the M3 card whenever the running
+  // model artifact was trained on synthetic/mock data.
+  var modelHealth = null;
+
+  function confidenceLabel(dataQuality){
+    var q = Number(dataQuality);
+    if(!isFinite(q)) return '—';
+    if(q >= 0.85) return 'High';
+    if(q >= 0.6) return 'Medium';
+    return 'Low';
+  }
+
+  // Renders an M3 prediction result (from /api/ml/demo or /api/ml/predict)
+  // into the M3 Flood Prediction card. Shared by the page-load demo and by
+  // the real predictBtn handler further down this file.
+  function renderM3Result(data){
+    document.getElementById('m3Empty').style.display = 'none';
+    var pct = Math.round(Number(data.flood_probability || 0) * 100);
+    document.getElementById('m3Probability').textContent = pct + '%';
+    document.getElementById('m3RiskLevel').textContent = data.risk_level || '—';
+    document.getElementById('m3RiskLevel').className = 'm3-risk-level risk-' + String(data.risk_level || '').toLowerCase();
+    document.getElementById('m3RiskMeaning').textContent = data.risk_meaning || ('Flood probability ' + pct + '%');
+    document.getElementById('m3Window').textContent = data.prediction_window || '—';
+    document.getElementById('m3Confidence').textContent = confidenceLabel(data.data_quality);
+    document.getElementById('m3DataQuality').textContent =
+      (data.data_quality !== undefined && data.data_quality !== null && isFinite(Number(data.data_quality)))
+        ? Math.round(Number(data.data_quality) * 100) + '%' : '—';
+    renderFreshnessAndDegraded('m3', data);
+  }
+
+  function loadM3Demo(){
+    fetch('/api/ml/health', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(h){
+      modelHealth = h;
+      var badge = document.getElementById('syntheticBadge');
+      if (badge) badge.style.display = (h && h.data_is_synthetic) ? 'inline-flex' : 'none';
+    }).catch(function(){});
+    fetch('/api/ml/demo', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+      if (!data) return;
+      renderM3Result(data);
+      var resultEl = document.getElementById('predictResult');
+      if (resultEl) resultEl.textContent = 'Showing a demo prediction. Select a covered location above to run a live check.';
+    }).catch(function(){});
+  }
+  protectDashboard().then(function(){
+    fetch('/api/auth/me', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+      if (data && data.user) {
+        var p = document.getElementById('profileName');
+        if (p) p.textContent = data.user.fullName;
+      }
+      loadM3Demo();
+      // Risk Map initialization is handled by the map script below.
+      // Do not call ensureRiskMap() here because that function is declared
+      // in a later <script> block and is not available across script blocks
+      // until that block has executed.
+    });
+  });
+</script>
+
+<script>
+  // M1 Water-Level Vision card — supporting module only. This never calls
+  // /api/ml/predict or otherwise touches the M3 probability; it just shows
+  // whatever /api/m1/latest returns for the selected location. See
+  // ml/m1/README.md and services/m1Ingest.js for why that's structurally
+  // guaranteed (quality_status is always 'estimated').
+  var m1LocationId = null;
+
+  function fmtM1Num(value, decimals, unit) {
+    if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+    var sign = Number(value) > 0 ? '+' : '';
+    return sign + Number(value).toFixed(decimals) + (unit || '');
+  }
+
+  function renderM1Result(data) {
+    var empty = document.getElementById('m1Empty');
+    var body = document.getElementById('m1Data');
+
+    if (!data || !data.available) {
+      empty.style.display = 'block';
+      empty.textContent = (data && data.message) || 'No M1 estimate yet for this location.';
+      body.style.display = 'none';
+      renderFreshnessAndDegraded('m1', null);
+      return;
+    }
+
+    empty.style.display = 'none';
+    body.style.display = 'block';
+    document.getElementById('m1Level').textContent = fmtM1Num(data.level_m, 2, ' m');
+    document.getElementById('m1RiseRate').textContent = fmtM1Num(data.rise_rate_m_per_hr, 3, ' m/hr');
+    document.getElementById('m1Changes').textContent =
+      fmtM1Num(data.change_10m, 2) + ' / ' + fmtM1Num(data.change_30m, 2) + ' / ' + fmtM1Num(data.change_1h, 2) + ' m';
+    document.getElementById('m1Confidence').textContent =
+      (data.vision_confidence === null || data.vision_confidence === undefined)
+        ? '—' : Math.round(Number(data.vision_confidence) * 100) + '%';
+    var when = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '—';
+    document.getElementById('m1Meta').textContent =
+      (data.camera_id ? data.camera_id + ' · ' : '') + 'quality: ' + (data.quality_status || '—') + ' · ' + when;
+    renderFreshnessAndDegraded('m1', data, 'Reading');
+  }
+
+  function loadM1Card(locationId) {
+    m1LocationId = locationId;
+    var btn = document.getElementById('m1RunBtn');
+    btn.disabled = !locationId;
+    document.getElementById('m1RunStatus').textContent = '';
+    if (!locationId) { renderM1Result(null); return; }
+
+    fetch('/api/m1/latest?location_id=' + encodeURIComponent(locationId), { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) { renderM1Result(data); })
+      .catch(function () { renderM1Result(null); });
+  }
+
+  document.getElementById('m1RunBtn').addEventListener('click', async function () {
+    if (!m1LocationId) return;
+    var btn = document.getElementById('m1RunBtn');
+    var statusEl = document.getElementById('m1RunStatus');
+    btn.disabled = true;
+    statusEl.textContent = 'Running estimate on a mock frame…';
+    try {
+      var res = await fetch('/api/m1/ingest', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location_id: m1LocationId })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'M1 estimate failed.');
+      renderM1Result(data);
+      statusEl.textContent = 'Updated from a mock reference frame — not a live camera feed.';
+    } catch (err) {
+      statusEl.textContent = err.message || 'No camera calibration available for this location.';
+    } finally {
+      btn.disabled = !m1LocationId;
+    }
+  });
+</script>
+
+<script>
+  // M2 Anomaly/Event Detector card — supporting/operational module. This
+  // never calls /api/ml/predict or otherwise touches the M3 probability;
+  // it just shows whatever /api/m2/events returns for the selected
+  // location, and can trigger one demo detection cycle via
+  // POST /api/m2/events. See services/m2Detect.js and routes/m2.js for
+  // why this is a rule-based stand-in rather than real video analysis.
+  var m2LocationId = null;
+
+  function fmtM2Pct(value) {
+    if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+    return Math.round(Number(value) * 100) + '%';
+  }
+  function fmtM2EventLabel(type) {
+    if (!type) return '—';
+    return type.replace(/_/g, ' ');
+  }
+  function fmtM2Time(iso) {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+  }
+
+  function renderM2Result(event, gate) {
+    var empty = document.getElementById('m2Empty');
+    var body = document.getElementById('m2Data');
+
+    if (!event) {
+      empty.style.display = 'block';
+      empty.textContent = 'No M2 event has been detected yet for this location.';
+      body.style.display = 'none';
+      renderFreshnessAndDegraded('m2', gate || null);
+      return;
+    }
+
+    empty.style.display = 'none';
+    body.style.display = 'block';
+    var typeEl = document.getElementById('m2EventType');
+    typeEl.textContent = fmtM2EventLabel(event.event_type);
+    typeEl.className = 'm2-event-type ' + (event.event_type || '');
+    document.getElementById('m2Confidence').textContent = fmtM2Pct(event.confidence);
+    document.getElementById('m2Score').textContent = fmtM2Pct(event.anomaly_score);
+    document.getElementById('m2Detected').textContent = fmtM2Time(event.detected_at);
+    document.getElementById('m2Meta').textContent = 'source: ' + (event.source || '—');
+    renderFreshnessAndDegraded('m2', {
+      data_freshness: event.data_freshness,
+      degraded_confidence: gate ? gate.degraded_confidence : false,
+      degraded_confidence_reason: gate ? gate.degraded_confidence_reason : null
+    }, 'Event');
+  }
+
+  function loadM2Card(locationId) {
+    m2LocationId = locationId;
+    var btn = document.getElementById('m2RunBtn');
+    btn.disabled = !locationId;
+    document.getElementById('m2RunStatus').textContent = '';
+    if (!locationId) { renderM2Result(null); return; }
+
+    fetch('/api/m2/events?location_id=' + encodeURIComponent(locationId) + '&limit=1', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        renderM2Result(data && data.events && data.events[0], data);
+      })
+      .catch(function () { renderM2Result(null); });
+  }
+
+  document.getElementById('m2RunBtn').addEventListener('click', async function () {
+    if (!m2LocationId) return;
+    var btn = document.getElementById('m2RunBtn');
+    var statusEl = document.getElementById('m2RunStatus');
+    btn.disabled = true;
+    statusEl.textContent = 'Checking latest mock readings…';
+    try {
+      var res = await fetch('/api/m2/events', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location_id: m2LocationId })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'M2 check failed.');
+      if (data.flagged) {
+        renderM2Result(data.event, data);
+        statusEl.textContent = 'Event flagged from mock rainfall/water-level data — not a real video feed.';
+        loadAuthorityAlerts();
+      } else {
+        statusEl.textContent = data.message || 'No threshold crossed on the latest mock readings.';
+      }
+    } catch (err) {
+      statusEl.textContent = err.message || 'Unable to run the M2 check.';
+    } finally {
+      btn.disabled = !m2LocationId;
+    }
+  });
+</script>
+
+<script>
+  // M4 Landslide Hazard Estimate card — independent supporting hazard
+  // module. This never calls /api/ml/predict or otherwise touches the M3
+  // flood probability; it just shows whatever /api/m4/hazard returns for
+  // the selected location. See ml/m4/README.md, ml/m4/train_landslide.py,
+  // and routes/m4.js for why the landslide label is synthetic and why
+  // this is structurally separate from M3.
+  var m4LocationId = null;
+
+  function fmtM4Pct(value) {
+    if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+    return Math.round(Number(value) * 100) + '%';
+  }
+
+  function renderM4Result(data) {
+    var empty = document.getElementById('m4Empty');
+    var body = document.getElementById('m4Data');
+
+    if (!data || data.landslide_probability === undefined) {
+      empty.style.display = 'block';
+      empty.textContent = (data && data.message) || 'No M4 hazard estimate available for this location yet.';
+      body.style.display = 'none';
+      renderFreshnessAndDegraded('m4', null);
+      return;
+    }
+
+    empty.style.display = 'none';
+    body.style.display = 'block';
+    var levelEl = document.getElementById('m4RiskLevel');
+    levelEl.textContent = (data.risk_level || '—').toLowerCase();
+    levelEl.className = 'm4-risk-level ' + (data.risk_level || '');
+    document.getElementById('m4Probability').textContent = fmtM4Pct(data.landslide_probability);
+    document.getElementById('m4Meta').textContent =
+      (data.risk_meaning ? data.risk_meaning + ' · ' : '') +
+      (data.model_version || '—') + ' · data: ' + (data.data_quality || '—') +
+      ' · context only, separate from the M3 flood probability';
+    renderFreshnessAndDegraded('m4', data);
+  }
+
+  function loadM4Card(locationId) {
+    m4LocationId = locationId;
+    var btn = document.getElementById('m4RunBtn');
+    btn.disabled = !locationId;
+    document.getElementById('m4RunStatus').textContent = '';
+    if (!locationId) { renderM4Result(null); return; }
+
+    fetch('/api/m4/hazard?location_id=' + encodeURIComponent(locationId), { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) { renderM4Result(data); })
+      .catch(function () { renderM4Result(null); });
+  }
+
+  document.getElementById('m4RunBtn').addEventListener('click', async function () {
+    if (!m4LocationId) return;
+    var btn = document.getElementById('m4RunBtn');
+    var statusEl = document.getElementById('m4RunStatus');
+    btn.disabled = true;
+    statusEl.textContent = 'Running hazard estimate…';
+    try {
+      var res = await fetch('/api/m4/hazard?location_id=' + encodeURIComponent(m4LocationId), { credentials: 'same-origin' });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'M4 hazard estimate failed.');
+      renderM4Result(data);
+      statusEl.textContent = data.data_quality === 'estimated'
+        ? 'Updated — some inputs used estimated defaults (limited terrain/rainfall history for this location).'
+        : 'Updated.';
+    } catch (err) {
+      statusEl.textContent = err.message || 'Unable to run the M4 hazard estimate.';
+    } finally {
+      btn.disabled = !m4LocationId;
+    }
+  });
+</script>
+
+<script>
+  // M5 Water-Level Forecasting card — supporting module only. This never
+  // calls /api/ml/predict or otherwise touches the M3 probability; it
+  // just shows whatever /api/m5/forecast returns for the selected
+  // location. See ml/m5/README.md, ml/m5/train_forecast.py and
+  // routes/m5.js for why that's structurally guaranteed.
+  var m5LocationId = null;
+  var m5ChartInstance = null;
+
+  function fmtM5Level(value) {
+    if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+    return Number(value).toFixed(2) + ' m';
+  }
+
+  function renderM5Chart(data) {
+    var ctx = document.getElementById('m5Chart').getContext('2d');
+    var points = [data.current_level_m, data.forecast_1h, data.forecast_3h, data.forecast_6h];
+    if (m5ChartInstance) { m5ChartInstance.destroy(); }
+    m5ChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Now', '+1h', '+3h', '+6h'],
+        datasets: [{
+          data: points,
+          borderColor: '#2f8fff',
+          backgroundColor: 'rgba(47,143,255,0.14)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#2f8fff',
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 250 },
+        plugins: { legend: { display: false }, tooltip: { enabled: true } },
+        scales: {
+          x: { ticks: { color: '#7c6a83', font: { size: 9 } }, grid: { display: false } },
+          y: { ticks: { color: '#7c6a83', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        }
+      }
+    });
+  }
+
+  function renderM5Result(data) {
+    var empty = document.getElementById('m5Empty');
+    var body = document.getElementById('m5Data');
+    var badge = document.getElementById('m5SyntheticBadge');
+
+    if (!data || data.forecast_1h === undefined) {
+      empty.style.display = 'block';
+      empty.textContent = (data && data.message) || 'No M5 forecast available for this location yet.';
+      body.style.display = 'none';
+      renderFreshnessAndDegraded('m5', null);
+      return;
+    }
+
+    empty.style.display = 'none';
+    body.style.display = 'block';
+    badge.style.display = data.data_is_synthetic ? 'inline-block' : 'none';
+    document.getElementById('m5Now').textContent = fmtM5Level(data.current_level_m);
+    document.getElementById('m5Plus1h').textContent = fmtM5Level(data.forecast_1h);
+    document.getElementById('m5Plus3h').textContent = fmtM5Level(data.forecast_3h);
+    document.getElementById('m5Meta').textContent =
+      (data.model_version || '—') + ' · +6h ' + fmtM5Level(data.forecast_6h) + ' · data: ' + (data.data_quality || '—');
+    renderFreshnessAndDegraded('m5', data);
+    renderM5Chart(data);
+  }
+
+  function loadM5Card(locationId) {
+    m5LocationId = locationId;
+    var btn = document.getElementById('m5RunBtn');
+    btn.disabled = !locationId;
+    document.getElementById('m5RunStatus').textContent = '';
+    if (!locationId) { renderM5Result(null); return; }
+
+    fetch('/api/m5/forecast?location_id=' + encodeURIComponent(locationId), { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) { renderM5Result(data); })
+      .catch(function () { renderM5Result(null); });
+  }
+
+  document.getElementById('m5RunBtn').addEventListener('click', async function () {
+    if (!m5LocationId) return;
+    var btn = document.getElementById('m5RunBtn');
+    var statusEl = document.getElementById('m5RunStatus');
+    btn.disabled = true;
+    statusEl.textContent = 'Running forecast…';
+    try {
+      var res = await fetch('/api/m5/forecast?location_id=' + encodeURIComponent(m5LocationId), { credentials: 'same-origin' });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'M5 forecast failed.');
+      renderM5Result(data);
+      statusEl.textContent = data.data_quality === 'estimated'
+        ? 'Updated — some inputs used estimated defaults (limited history for this location).'
+        : 'Updated.';
+    } catch (err) {
+      statusEl.textContent = err.message || 'Unable to run the M5 forecast.';
+    } finally {
+      btn.disabled = !m5LocationId;
+    }
+  });
+</script>
+
+<script>
+  var titles = {
+    overview:"Here's your ward monitoring overview",
+    map:"Village and ward level risk view",
+    alerts:"Review and acknowledge current evidence",
+    cameras:"Water-level detection and anomaly evidence",
+    settings:"Configure your FloodGuard monitoring preferences",
+    support:"Get help and find answers about FloodGuard"
+  };
+  // "overview", "map" and "alerts" all live on the single Overview page now
+  // (items 1-7 of the required top-to-bottom flow) — "Risk map" and
+  // "Alerts" nav items scroll to the relevant section instead of switching
+  // to a separate view. Cameras/Settings/Support remain their own views.
+  var overviewAnchors = { map: 'riskMapSection', alerts: 'alertsSection' };
+  function showView(name){
+    if(name === 'overview' || name === 'map' || name === 'alerts'){
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+      document.getElementById('view-overview').classList.add('active');
+      document.querySelectorAll('.nav-item[data-view]').forEach(function(n){n.classList.toggle('active', n.dataset.view===name);});
+      document.querySelectorAll('.pill[data-view]').forEach(function(n){n.classList.toggle('active', n.dataset.view===name);});
+      document.getElementById('pageSub').textContent = titles[name];
+      ensureRiskMap();
+      var anchorId = overviewAnchors[name];
+      if(anchorId){
+        var el = document.getElementById(anchorId);
+        if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+      } else {
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+      if(name === 'map'){
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){
+            if(riskMap){
+              riskMap.invalidateSize(true);
+              setTimeout(function(){ if(riskMap) riskMap.invalidateSize(true); },80);
+              setTimeout(function(){ if(riskMap){ riskMap.invalidateSize(true); if(currentZoneResult) fitZoneBounds(currentZoneResult); } },300);
+            }
+          });
+        });
+      }
+      return;
+    }
+    document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+    document.getElementById('view-'+name).classList.add('active');
+    document.querySelectorAll('.nav-item[data-view]').forEach(function(n){n.classList.toggle('active', n.dataset.view===name);});
+    document.querySelectorAll('.pill[data-view]').forEach(function(n){n.classList.toggle('active', n.dataset.view===name);});
+    document.getElementById('pageSub').textContent = titles[name];
+  }
+  document.querySelectorAll('[data-view]').forEach(function(item){
+    item.addEventListener('click', function(){ showView(item.dataset.view); });
+  });
+
+
+  function loadSettings(){
+    try{
+      var saved = JSON.parse(localStorage.getItem('floodguardSettings') || '{}');
+      if(saved.defaultLocation) document.getElementById('defaultLocation').value = saved.defaultLocation;
+      if(saved.riskThreshold) document.getElementById('riskThreshold').value = saved.riskThreshold;
+      if(saved.refreshRate) document.getElementById('refreshRate').value = saved.refreshRate;
+      ['highAlerts','mediumAlerts','cameraAlerts'].forEach(function(id){
+        if(typeof saved[id] === 'boolean') document.getElementById(id).checked = saved[id];
+      });
+    }catch(e){}
+  }
+  function saveSettings(){
+    var settings = {
+      defaultLocation:document.getElementById('defaultLocation').value,
+      riskThreshold:document.getElementById('riskThreshold').value,
+      refreshRate:document.getElementById('refreshRate').value,
+      highAlerts:document.getElementById('highAlerts').checked,
+      mediumAlerts:document.getElementById('mediumAlerts').checked,
+      cameraAlerts:document.getElementById('cameraAlerts').checked
+    };
+    localStorage.setItem('floodguardSettings', JSON.stringify(settings));
+    document.getElementById('settingsStatus').textContent = '✓ Settings saved successfully.';
+    setTimeout(function(){ document.getElementById('settingsStatus').textContent=''; }, 2500);
+  }
+  // --- Alert delivery preferences (SMS/email), backed by /api/user/preferences ---
+  async function loadNotificationPrefs(){
+    try{
+      var res = await fetch('/api/user/preferences', { credentials:'same-origin' });
+      if(!res.ok) return;
+      var prefs = await res.json();
+      document.getElementById('smsEnabled').checked = !!prefs.sms_enabled;
+      document.getElementById('emailEnabled').checked = !!prefs.email_enabled;
+      document.getElementById('phoneNumber').value = prefs.phone_number || '';
+      document.getElementById('emailAddress').value = prefs.email_address || '';
+    }catch(e){ /* Settings tab just shows defaults if this fails. */ }
+  }
+  async function saveNotificationPrefs(){
+    var status = document.getElementById('notifPrefsStatus');
+    status.style.color = 'var(--teal)';
+    status.textContent = 'Saving…';
+    var body = {
+      sms_enabled: document.getElementById('smsEnabled').checked,
+      email_enabled: document.getElementById('emailEnabled').checked,
+      phone_number: document.getElementById('phoneNumber').value.trim(),
+      email_address: document.getElementById('emailAddress').value.trim()
+    };
+    try{
+      var res = await fetch('/api/user/preferences', {
+        method:'POST',
+        credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Unable to save preferences.');
+      status.style.color = 'var(--teal)';
+      status.textContent = '✓ Alert preferences saved.';
+    }catch(err){
+      status.style.color = 'var(--red)';
+      status.textContent = err.message || 'Unable to save preferences.';
+    }
+    setTimeout(function(){ status.textContent=''; }, 3000);
+  }
+
+  // --- Alert history panel (Overview), backed by /api/alerts ---
+  function escAttr(v){ return String(v).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+  function formatAlertTime(iso){
+    try{ return new Date(iso).toLocaleString(); }catch(e){ return iso; }
+  }
+  async function loadAlertHistory(){
+    var status = document.getElementById('alertHistoryStatus');
+    var table = document.getElementById('alertHistoryTable');
+    var body = document.getElementById('alertHistoryBody');
+    status.classList.remove('error');
+    status.style.display='block'; table.style.display='none';
+    status.textContent = 'Loading your alert history…';
+    try{
+      var res = await fetch('/api/alerts?limit=20', { credentials:'same-origin' });
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Unable to load alert history.');
+      var alerts = data.alerts || [];
+      if(!alerts.length){
+        status.textContent = 'No alerts yet. You\'ll see a record here the first time you enter a Yellow or Red risk zone.';
+        return;
+      }
+      body.innerHTML = alerts.map(function(a){
+        return '<tr>'+
+          '<td>'+escAttr(formatAlertTime(a.issued_at))+'</td>'+
+          '<td>'+escAttr(a.place_name || '—')+'</td>'+
+          '<td><span class="zone-pill '+escAttr(a.zone)+'">'+escAttr(a.zone)+'</span></td>'+
+          '<td>'+escAttr(a.channel)+'</td>'+
+          '<td><span class="status-pill '+escAttr(a.delivery_status)+'">'+escAttr(a.delivery_status.replace('_',' '))+'</span></td>'+
+        '</tr>';
+      }).join('');
+      status.style.display='none'; table.style.display='table';
+    }catch(err){
+      status.classList.add('error');
+      status.textContent = err.message || 'Unable to load alert history.';
+    }
+  }
+  var alertHistoryRefreshEl = document.getElementById('alertHistoryRefresh');
+  if(alertHistoryRefreshEl) alertHistoryRefreshEl.addEventListener('click', loadAlertHistory);
+  loadNotificationPrefs();
+  loadAlertHistory();
+
+  // --- Authority Alerts panel (Overview, 7b), backed by /api/m2/events ---
+  // Operational alerts from the M2 detector, across all locations — kept
+  // visually and functionally separate from the user's own geofence
+  // alerts above (different table/pill styling, different endpoint, no
+  // user_id scoping).
+  function escAuthAttr(v){ return String(v).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+  async function loadAuthorityAlerts(){
+    var status = document.getElementById('authorityAlertsStatus');
+    var table = document.getElementById('authorityAlertsTable');
+    var body = document.getElementById('authorityAlertsBody');
+    if(!status || !table || !body) return;
+    status.classList.remove('error');
+    status.style.display='block'; table.style.display='none';
+    status.textContent = 'Loading operational alerts…';
+    try{
+      var res = await fetch('/api/m2/events?limit=20', { credentials:'same-origin' });
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Unable to load operational alerts.');
+      var events = data.events || [];
+      if(!events.length){
+        status.textContent = 'No operational alerts yet. This fills in the first time an M2 check flags an event.';
+        return;
+      }
+      body.innerHTML = events.map(function(e){
+        return '<tr>'+
+          '<td>'+escAuthAttr(fmtM2Time(e.detected_at))+'</td>'+
+          '<td>'+escAuthAttr(e.place_name || '—')+'</td>'+
+          '<td><span class="op-pill '+escAuthAttr(e.event_type)+'">'+escAuthAttr(fmtM2EventLabel(e.event_type))+'</span></td>'+
+          '<td>'+escAuthAttr(fmtM2Pct(e.confidence))+'</td>'+
+          '<td>'+escAuthAttr(fmtM2Pct(e.anomaly_score))+'</td>'+
+        '</tr>';
+      }).join('');
+      status.style.display='none'; table.style.display='table';
+    }catch(err){
+      status.classList.add('error');
+      status.textContent = err.message || 'Unable to load operational alerts.';
+    }
+  }
+  var authorityAlertsRefreshEl = document.getElementById('authorityAlertsRefresh');
+  if(authorityAlertsRefreshEl) authorityAlertsRefreshEl.addEventListener('click', loadAuthorityAlerts);
+  loadAuthorityAlerts();
+
+  function toggleFaq(el){
+    var item = el.parentElement;
+    var open = item.classList.toggle('open');
+    el.querySelector('span').textContent = open ? '−' : '+';
+  }
+  function submitSupport(){
+    var subject = document.getElementById('supportSubject').value.trim();
+    var message = document.getElementById('supportMessage').value.trim();
+    var status = document.getElementById('supportStatus');
+    if(!subject || !message){ status.style.color='var(--red)'; status.textContent='Please enter both a subject and message.'; return; }
+    var requests = JSON.parse(localStorage.getItem('floodguardSupportRequests') || '[]');
+    requests.push({subject:subject,message:message,createdAt:new Date().toISOString()});
+    localStorage.setItem('floodguardSupportRequests', JSON.stringify(requests));
+    document.getElementById('supportSubject').value='';
+    document.getElementById('supportMessage').value='';
+    status.style.color='var(--teal)';
+    status.textContent='✓ Support request saved successfully. The request is ready for review.';
+  }
+  async function confirmLogout(){
+    if(confirm('Are you sure you want to log out?')) await logout();
+  }
+  loadSettings();
+
+  // Interactive risk map: Chamoli-area monitoring points with clickable markers.
+  var riskLocations = [
+    {id:'rampur',name:'Rampur, Ward 4',lat:30.5188,lng:79.5630,risk:78,lead:'~2h',level:'high'},
+    {id:'sonapur',name:'Sonapur',lat:30.4860,lng:79.5160,risk:51,lead:'~4h',level:'medium'},
+    {id:'devgram',name:'Devgram',lat:30.5530,lng:79.6150,risk:46,lead:'~4h',level:'medium'},
+    {id:'hillview',name:'Hillview',lat:30.5900,lng:79.5450,risk:12,lead:'~6h',level:'low'},
+    {id:'kalitala',name:'Kalitala',lat:30.4550,lng:79.5900,risk:9,lead:'~6h',level:'low'}
+  ];
+  var riskMap, markerById = {}, userMarker;
+  function riskIcon(level){ return L.divIcon({className:'',html:'<div class="risk-marker '+level+'"></div>',iconSize:[18,18],iconAnchor:[9,9],popupAnchor:[0,-11]}); }
+  function initRiskMap(){
+    var el=document.getElementById('riskMap'); if(!el || !window.L || riskMap) return;
+    riskMap=L.map(el,{zoomControl:false,attributionControl:true,preferCanvas:true}).setView([30.525,79.565],12);
+    L.control.zoom({position:'bottomright'}).addTo(riskMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(riskMap);
+    riskLocations.forEach(function(loc){
+      var marker=L.marker([loc.lat,loc.lng],{icon:riskIcon(loc.level)}).addTo(riskMap);
+      marker.bindPopup('<div class="map-popup"><b>'+loc.name+'</b><span>Flood-risk monitoring point</span><strong style="color:'+(loc.level==='high'?'#ff6b7a':loc.level==='medium'?'#f6b04d':'#3fd7bd')+'">Risk '+loc.risk+'% · Lead time '+loc.lead+'</strong></div>');
+      marker.on('click',function(){ selectRiskLocation(loc.id,true); }); markerById[loc.id]=marker;
+    });
+    requestAnimationFrame(function(){
+      riskMap.invalidateSize(true);
+      setTimeout(function(){ if(riskMap) riskMap.invalidateSize(true); },100);
+      setTimeout(function(){ if(riskMap) riskMap.invalidateSize(true); },500);
+    });
+  }
+  function selectRiskLocation(id,openPopup){
+    var loc=riskLocations.find(function(x){return x.id===id;}); if(!loc || !riskMap) return;
+    riskMap.flyTo([loc.lat,loc.lng],14,{duration:.7});
+    document.querySelectorAll('.loc-row[data-location]').forEach(function(r){r.classList.toggle('selected',r.dataset.location===id);});
+    if(openPopup && markerById[id]) markerById[id].openPopup();
+  }
+  function focusAllLocations(){
+    if(!riskMap) return; var bounds=L.latLngBounds(riskLocations.map(function(x){return [x.lat,x.lng];})); riskMap.fitBounds(bounds.pad(.25));
+  }
+  function locateUser(){
+    var status=document.getElementById('mapStatus'); if(!navigator.geolocation){status.style.display='block';status.textContent='Location is not supported by this browser.';return;}
+    status.style.display='block';status.textContent='Getting your location…';
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var ll=[pos.coords.latitude,pos.coords.longitude]; if(userMarker) userMarker.remove();
+      userMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="risk-marker user"></div>',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(riskMap).bindPopup('<div class="map-popup"><b>Your current location</b><span>Browser location access enabled</span></div>');
+      riskMap.flyTo(ll,13,{duration:.8}); status.textContent='Current location found.';setTimeout(function(){status.style.display='none';},2200);
+    },function(){status.textContent='Location access was denied or unavailable.';setTimeout(function(){status.style.display='none';},2800);},{enableHighAccuracy:true,timeout:8000});
+  }
+  document.querySelectorAll('.loc-row[data-location]').forEach(function(row){row.addEventListener('click',function(){selectRiskLocation(row.dataset.location,true);});});
+
+  // Functional monitored-location + place search.
+  var mapSearchInput=document.getElementById('mapLocationSearch');
+  var mapSearchResults=document.getElementById('mapSearchResults');
+  var searchTimer=null, searchItems=[], activeSearchIndex=-1;
+  function escHtml(v){return String(v).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
+  function hideMapSearchResults(){mapSearchResults.classList.remove('show');mapSearchResults.innerHTML='';searchItems=[];activeSearchIndex=-1;}
+  function showMapSearchResults(items,emptyText){
+    searchItems=items||[];activeSearchIndex=-1;mapSearchResults.innerHTML='';
+    if(!searchItems.length){mapSearchResults.innerHTML='<div class="map-search-empty">'+escHtml(emptyText||'No matching locations found.')+'</div>';mapSearchResults.classList.add('show');return;}
+    searchItems.forEach(function(item,index){
+      var b=document.createElement('button');b.type='button';b.className='map-search-result';b.setAttribute('role','option');
+      b.innerHTML='<span class="search-type">'+escHtml(item.type)+'</span><b>'+escHtml(item.title)+'</b><small>'+escHtml(item.subtitle||'')+'</small>';
+      b.addEventListener('click',function(){chooseMapSearchResult(index);});mapSearchResults.appendChild(b);
+    });mapSearchResults.classList.add('show');
+  }
+  function chooseMapSearchResult(index){
+    var item=searchItems[index];if(!item)return;
+    if(item.kind==='monitored'){selectRiskLocation(item.location.id,true);mapSearchInput.value=item.location.name;}
+    else if(item.kind==='place'){
+      if(!riskMap) return;var lat=Number(item.lat),lng=Number(item.lng);
+      if(!isFinite(lat)||!isFinite(lng))return;
+      if(window.placeSearchMarker) placeSearchMarker.remove();
+      placeSearchMarker=L.marker([lat,lng]).addTo(riskMap).bindPopup('<div class="map-popup"><b>'+escHtml(item.title)+'</b><span>Place search result</span></div>').openPopup();
+      riskMap.flyTo([lat,lng],Math.max(12,Number(item.zoom)||14),{duration:.7});mapSearchInput.value=item.title;
+    }
+    hideMapSearchResults();
+  }
+  function localSearch(query){
+    var q=query.toLowerCase();return riskLocations.filter(function(loc){return (loc.name+' '+loc.id+' flood monitoring').toLowerCase().includes(q);}).map(function(loc){return {kind:'monitored',type:'Monitored',title:loc.name,subtitle:'Risk '+loc.risk+'% · Lead time '+loc.lead,location:loc};});
+  }
+  async function searchPlaces(query){
+    // Nominatim provides public geocoding for place names. Local monitored points are always shown first.
+    var url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q='+encodeURIComponent(query);
+    var res=await fetch(url,{headers:{'Accept-Language':'en'}});if(!res.ok)throw new Error('Place search unavailable');
+    var data=await res.json();return data.map(function(p){return {kind:'place',type:'Place',title:p.name||String(p.display_name||'').split(',')[0],subtitle:p.display_name||'',lat:p.lat,lng:p.lon,zoom:p.type==='city'?11:14};});
+  }
+  async function runMapSearch(){
+    var q=mapSearchInput.value.trim();if(q.length<2){hideMapSearchResults();return;}
+    var local=localSearch(q);showMapSearchResults(local,local.length?'':'Searching places…');
+    // If the query exactly/closely matches monitored locations, still allow broader place results below.
+    try{var places=await searchPlaces(q);if(mapSearchInput.value.trim()!==q)return;var combined=local.concat(places);showMapSearchResults(combined,combined.length?'':'No monitored location or place found.');}
+    catch(err){if(mapSearchInput.value.trim()===q){showMapSearchResults(local,local.length?'':'Place search is unavailable. Check your internet connection.');}}
+  }
+  mapSearchInput.addEventListener('input',function(){clearTimeout(searchTimer);searchTimer=setTimeout(runMapSearch,350);});
+  mapSearchInput.addEventListener('keydown',function(e){
+    var buttons=mapSearchResults.querySelectorAll('.map-search-result');
+    if(e.key==='ArrowDown'){e.preventDefault();if(!searchItems.length)return;activeSearchIndex=Math.min(activeSearchIndex+1,searchItems.length-1);}
+    else if(e.key==='ArrowUp'){e.preventDefault();if(!searchItems.length)return;activeSearchIndex=Math.max(activeSearchIndex-1,0);}
+    else if(e.key==='Escape'){hideMapSearchResults();return;}
+    else if(e.key==='Enter'){e.preventDefault();if(activeSearchIndex>=0)chooseMapSearchResult(activeSearchIndex);else if(searchItems.length)chooseMapSearchResult(0);else runMapSearch();return;}
+    else return;
+    buttons.forEach(function(b,i){b.classList.toggle('active',i===activeSearchIndex);});if(buttons[activeSearchIndex])buttons[activeSearchIndex].scrollIntoView({block:'nearest'});
+  });
+  document.addEventListener('click',function(e){if(!e.target.closest('.map-search-wrap'))hideMapSearchResults();});
+  // Initialise only when the Risk Map panel is visible. This prevents Leaflet from
+  // calculating a zero/incorrect width while its parent view is display:none.
+  function ensureRiskMap(){
+    if(!riskMap) initRiskMap();
+    if(riskMap){
+      requestAnimationFrame(function(){ riskMap.invalidateSize(true); });
+    } else {
+      var mapStatus = document.getElementById('mapStatus');
+      if(mapStatus && !window.L){
+        mapStatus.style.display = 'block';
+        mapStatus.textContent = 'Map library is still loading — retrying…';
+        setTimeout(function(){
+          if(!riskMap && window.L){
+            initRiskMap();
+            if(riskMap){
+              mapStatus.style.display = 'none';
+              riskMap.invalidateSize(true);
+            }
+          }
+        }, 1200);
+      }
+    }
+  }
+
+  // The Risk Map is inline in the Overview flow, so initialize it after the
+  // map helper functions have been defined. This fixes the previous race
+  // where an earlier script block called ensureRiskMap() before this function
+  // existed, leaving a blank map with no Leaflet controls or tiles.
+  ensureRiskMap();
+
+  // -----------------------------------------------------------------------
+  // Zone Engine (frontend) — after an M3 prediction runs, fetch /api/zones
+  // and draw the Red/Yellow/Green risk rings it returns as concentric
+  // Leaflet circles centered on the selected location, plus a legend.
+  // Triggered from the predictBtn handler further down this page.
+  // -----------------------------------------------------------------------
+  var zoneLayerGroup = null;
+  var currentZoneResult = null;
+
+  function ensureZoneLayerGroup(){
+    if(!riskMap) return null;
+    if(!zoneLayerGroup) zoneLayerGroup = L.layerGroup().addTo(riskMap);
+    return zoneLayerGroup;
+  }
+
+  // Demo-only helper: clicking a Red/Yellow ring does not mean a real user
+  // has physically entered it. The button in the popup explicitly simulates
+  // an entry by first recording an outside position, then a position inside
+  // the selected ring. This exercises the real geofence -> alert engine path
+  // without bypassing transition/cooldown logic.
+  async function simulateZoneEntry(targetZone, zone){
+    if(!selectedLocation || !latestPrediction || !zone){
+      showZoneDemoAlert('Zone demo unavailable', 'Run an M3 prediction for the selected monitored location first.', true);
+      return;
+    }
+    if(targetZone !== 'red' && targetZone !== 'yellow') return;
+
+    try{
+      var centerLat = Number(zone.latitude);
+      var centerLng = Number(zone.longitude);
+      var greenKm = Number(zone.green_radius_km);
+      var redKm = Number(zone.red_radius_km);
+      var yellowKm = Number(zone.yellow_radius_km);
+      if(!isFinite(centerLat) || !isFinite(centerLng) || !isFinite(greenKm) || !isFinite(redKm) || !isFinite(yellowKm)){
+        throw new Error('Zone geometry is incomplete.');
+      }
+
+      // First put the demo user outside all rings so the next call is a
+      // guaranteed transition into the chosen alertable zone.
+      var outsideLat = centerLat + ((greenKm + 1.5) / 111.0);
+      await postGeofenceDemo(outsideLat, centerLng);
+
+      // Then place the demo user in the requested ring.
+      var entryKm = targetZone === 'red'
+        ? Math.max(0.05, redKm * 0.35)
+        : Math.max(redKm + 0.05, (redKm + yellowKm) / 2);
+      var entryLat = centerLat + (entryKm / 111.0);
+      var data = await postGeofenceDemo(entryLat, centerLng);
+
+      renderZoneStatusResult(data);
+      if(data.alert){
+        var status = data.alert.deliveryStatus || 'unknown';
+        if(status === 'sent'){
+          showZoneDemoAlert(
+            targetZone.toUpperCase() + ' ALERT',
+            'Demo entry triggered the real alert engine. ' + (data.alert.channel === 'both' ? 'SMS + email' : String(data.alert.channel || 'notification')) + ' delivery was recorded as sent.'
+          );
+        }else if(status === 'skipped_cooldown'){
+          showZoneDemoAlert(
+            'Alert suppressed by cooldown',
+            'The zone transition was detected, but a recent ' + targetZone.toUpperCase() + ' alert is still within its cooldown window.', true
+          );
+        }else{
+          showZoneDemoAlert(
+            targetZone.toUpperCase() + ' ALERT ATTEMPT',
+            'The alert engine created an alert record, but delivery was not sent. Enable the corresponding SMS/email preference in Settings.', true
+          );
+        }
+      }else{
+        showZoneDemoAlert('Zone entered', 'The geofence transition was detected, but no alert was generated.', true);
+      }
+      loadAlertHistory();
+    }catch(err){
+      console.error('Demo zone entry error:', err);
+      showZoneDemoAlert('Zone demo failed', err.message || 'Unable to simulate zone entry.', true);
+    }
+  }
+
+  async function postGeofenceDemo(latitude, longitude){
+    var res = await fetch('/api/geofence/check', {
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        location_id:selectedLocation.location_id,
+        latitude:latitude,
+        longitude:longitude,
+        risk_level:latestPrediction.risk_level,
+        probability:latestPrediction.flood_probability
+      })
+    });
+    var data = await res.json();
+    if(!res.ok) throw new Error(data.message || 'Geofence check failed.');
+    return data;
+  }
+
+  function showZoneDemoAlert(title, body, isWarning){
+    var banner=document.getElementById('zoneDemoAlertBanner');
+    var titleEl=document.getElementById('zoneDemoAlertTitle');
+    var bodyEl=document.getElementById('zoneDemoAlertBody');
+    if(!banner || !titleEl || !bodyEl){
+      window.alert(title + '\\n\\n' + body);
+      return;
+    }
+    titleEl.textContent=title;
+    bodyEl.textContent=body;
+    banner.style.borderColor=isWarning ? 'rgba(246,176,77,.55)' : 'rgba(255,107,122,.55)';
+    banner.classList.add('show');
+    clearTimeout(window.__zoneDemoAlertTimer);
+    window.__zoneDemoAlertTimer=setTimeout(function(){banner.classList.remove('show');},6500);
+  }
+
+  function fitZoneBounds(zone){
+    if(!riskMap || !zone) return;
+    try{
+      var outerKm = Math.max(zone.green_radius_km, zone.yellow_radius_km, zone.red_radius_km, 0.05);
+      var bounds = L.circle([zone.latitude, zone.longitude], { radius: outerKm * 1000 }).getBounds();
+      riskMap.fitBounds(bounds.pad(0.25));
+    }catch(e){ /* map may not have a usable pixel size yet; showView('map') retries this later */ }
+  }
+
+  function renderZoneLegend(zone){
+    var legend = document.getElementById('zoneLegend');
+    if(!legend) return;
+    var confidenceNote = zone.degraded_confidence
+      ? '<div class="zone-legend-note">Degraded confidence — water-level data unavailable or stale. Showing M3-only zone.</div>'
+      : '';
+    var freshnessRow = (zone.water_level_evidence && zone.water_level_evidence.data_freshness)
+      ? '<div style="margin-top:8px;">' + freshnessBadgeHtml(zone.water_level_evidence.data_freshness, 'Water level') + '</div>'
+      : '';
+    legend.innerHTML =
+      '<div class="zone-legend-title">M3 risk zones · '+escHtml(zone.risk_level)+'</div>'+
+      '<div class="zone-legend-row"><i style="background:#ff6b7a"></i>Red · '+zone.red_radius_km.toFixed(2)+' km</div>'+
+      '<div class="zone-legend-row"><i style="background:#f6b04d"></i>Yellow · '+zone.yellow_radius_km.toFixed(2)+' km</div>'+
+      '<div class="zone-legend-row"><i style="background:#3fd7bd"></i>Green · '+zone.green_radius_km.toFixed(2)+' km</div>'+
+      confidenceNote+
+      freshnessRow+
+      '<div class="zone-legend-disclaimer">Illustrative zones — not validated emergency thresholds</div>';
+    legend.style.display = 'block';
+  }
+
+  function renderZoneCircles(zone){
+    ensureRiskMap();
+    var group = ensureZoneLayerGroup();
+    if(!group) return;
+    group.clearLayers();
+
+    var center = [zone.latitude, zone.longitude];
+    // Draw outer-to-inner so the red ring's stroke/fill sits on top.
+    var rings = [
+      { radiusKm: zone.green_radius_km, color: '#3fd7bd', label: 'Green zone' },
+      { radiusKm: zone.yellow_radius_km, color: '#f6b04d', label: 'Yellow zone' },
+      { radiusKm: zone.red_radius_km, color: '#ff6b7a', label: 'Red zone' }
+    ];
+    rings.forEach(function(ring){
+      var circle = L.circle(center, {
+        radius: Math.max(0, Number(ring.radiusKm) || 0) * 1000,
+        color: ring.color,
+        weight: 2,
+        fillColor: ring.color,
+        fillOpacity: 0.12
+      }).addTo(group);
+
+      var demoButton = (ring.label === 'Red zone' || ring.label === 'Yellow zone')
+        ? '<button type="button" class="zone-demo-alert-btn '+(ring.label === 'Yellow zone' ? 'yellow' : '')+'" data-demo-zone="'+ring.label.toLowerCase().split(' ')[0]+'">Simulate zone entry (demo)</button>'
+        : '';
+
+      circle.bindPopup(
+        '<div class="map-popup"><b>'+escHtml(ring.label)+'</b><span>'+ring.radiusKm.toFixed(2)+' km radius · '+escHtml(zone.risk_level)+'</span>'+demoButton+'</div>'
+      );
+
+      circle.on('popupopen', function(){
+        var popupEl = circle.getPopup() && circle.getPopup().getElement();
+        var btn = popupEl && popupEl.querySelector('[data-demo-zone]');
+        if(btn){
+          btn.addEventListener('click', function(){
+            simulateZoneEntry(btn.getAttribute('data-demo-zone'), zone);
+          }, { once:true });
+        }
+      });
+    });
+
+    L.circleMarker(center, { radius: 4, color: '#2f8fff', fillColor: '#2f8fff', fillOpacity: 1, weight: 2 }).addTo(group);
+
+    // Only snap the viewport now if the Overview page (which now contains
+    // the Risk Map inline) is already visible — otherwise the container
+    // has a zero/stale pixel size and fitBounds would zoom incorrectly.
+    // showView('map') calls fitZoneBounds again once it's properly sized.
+    if(document.getElementById('view-overview').classList.contains('active')){
+      fitZoneBounds(zone);
+    }
+
+    renderZoneLegend(zone);
+  }
+
+  async function fetchAndRenderZones(locationId, riskLevel, probability){
+    try{
+      var params = new URLSearchParams({ location_id: locationId, risk_level: riskLevel });
+      if(probability !== undefined && probability !== null && isFinite(probability)){
+        params.set('probability', probability);
+      }
+      var res = await fetch('/api/zones?'+params.toString(), { credentials: 'same-origin' });
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Unable to compute risk zones.');
+      currentZoneResult = data;
+      renderZoneCircles(data);
+      return data;
+    }catch(err){
+      console.error('Zone engine error:', err);
+      return null;
+    }
+  }
+
+  // Do NOT initialise on page load because the map view starts hidden.
+  // It is initialised by showView('map') after the panel becomes visible.
+  window.addEventListener('resize', function(){
+    if(riskMap && document.getElementById('view-overview').classList.contains('active')){
+      riskMap.invalidateSize(true);
+    }
+  });
+
+  var labels = ['00:00','02:00','04:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00','22:00'];
+  var data = [22,25,24,30,38,45,52,61,70,74,78,76];
+  var ctx = document.getElementById('riskChart').getContext('2d');
+  var grad = ctx.createLinearGradient(0,0,0,230);
+  grad.addColorStop(0,'rgba(47,143,255,0.35)');
+  grad.addColorStop(1,'rgba(47,143,255,0)');
+  new Chart(ctx, {
+    type:'line',
+    data:{labels:labels, datasets:[{
+      data:data, borderColor:'#2f8fff', borderWidth:2.5, pointRadius:0,
+      fill:true, backgroundColor:grad, tension:0.4
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{
+        backgroundColor:'#0a1830', titleColor:'#f5eef7', bodyColor:'#2f8fff', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+        padding:10, displayColors:false, callbacks:{label:function(c){return 'Risk ' + c.raw + '%';}}
+      }},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:'#7c6a83', font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#7c6a83', font:{size:11}, callback:function(v){return v+'%';}}}
+      }
+    }
+  });
+
+</script>
+
+<script>
+  // ---------------------------------------------------------------------
+  // Location & Model Coverage Engine (frontend)
+  //
+  // Resolves a location via one of three methods, then checks coverage.
+  // SAFETY RULE: `canRequestPrediction()` is the ONLY gate that may allow a
+  // call to /api/ml/predict for a selected location. If coverage_status is
+  // anything other than 'covered', no code path below ever fetches
+  // /api/ml/predict, and the UI always shows "prediction unavailable" —
+  // never a low/no-risk message — for uncovered regions.
+  // ---------------------------------------------------------------------
+  var selectedLocation = null;   // { latitude, longitude, place_name, location_id, timestamp, region }
+  var selectedCoverage = null;   // { coverage_status, model_region, model_version }
+  var pickLocationMap = null, pickLocationMarker = null, pendingPick = null;
+
+  function canRequestPrediction() {
+    return !!(selectedCoverage && selectedCoverage.coverage_status === 'covered');
+  }
+
+  function setLocMethod(method) {
+    document.querySelectorAll('.loc-method-btn').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.method === method);
+    });
+    document.getElementById('locSubpanelSearch').classList.toggle('active', method === 'search');
+    document.getElementById('locSubpanelMap').classList.toggle('active', method === 'map');
+    setLocStatus('');
+    if (method === 'map') {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (!pickLocationMap) initPickLocationMap();
+          if (pickLocationMap) pickLocationMap.invalidateSize(true);
+        });
+      });
+    }
+  }
+
+  function initPickLocationMap() {
+    var el = document.getElementById('pickLocationMap');
+    if (!el || !window.L || pickLocationMap) return;
+    pickLocationMap = L.map(el, { zoomControl: true, attributionControl: true }).setView([30.5, 79.5], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '© OpenStreetMap contributors'
+    }).addTo(pickLocationMap);
+    pickLocationMap.on('click', function (e) {
+      pendingPick = { latitude: e.latlng.lat, longitude: e.latlng.lng };
+      if (pickLocationMarker) pickLocationMarker.remove();
+      pickLocationMarker = L.marker(e.latlng).addTo(pickLocationMap);
+      document.getElementById('locConfirmMapBtn').disabled = false;
+    });
+  }
+
+  function setLocStatus(text, isError) {
+    var el = document.getElementById('locStatus');
+    el.textContent = text || '';
+    el.classList.toggle('error', !!isError);
+  }
+
+  function renderResolvedLocation(loc) {
+    selectedLocation = loc;
+    document.getElementById('selectedLocationEmpty').style.display = 'none';
+    document.getElementById('locResolved').classList.add('show');
+    document.getElementById('locResolvedName').textContent = loc.place_name + (loc.region ? ' · ' + loc.region : '');
+    document.getElementById('locResolvedMeta').textContent =
+      Number(loc.latitude).toFixed(4) + ', ' + Number(loc.longitude).toFixed(4) + ' · resolved ' + new Date(loc.timestamp).toLocaleTimeString();
+    // A newly resolved location invalidates any earlier zone-status check
+    // and any cached position/prediction the polling loop was reusing.
+    resetZoneStatus();
+    latestPrediction = null;
+    lastZoneCheckCoords = null;
+    loadM1Card(loc.location_id);
+    loadM2Card(loc.location_id);
+    loadM4Card(loc.location_id);
+    loadM5Card(loc.location_id);
+    enableDevSensorFeedPanel(loc.location_id);
+    startRealtimePolling();
+  }
+
+  function renderCoverageChecking() {
+    var badge = document.getElementById('coverageBadge');
+    badge.className = 'coverage-badge checking';
+    document.getElementById('coverageBadgeText').textContent = 'Checking model coverage…';
+    var btn = document.getElementById('predictBtn');
+    btn.disabled = true;
+    document.getElementById('predictResult').textContent = '';
+  }
+
+  function renderCoverageResult(coverage) {
+    selectedCoverage = coverage;
+    var badge = document.getElementById('coverageBadge');
+    var textEl = document.getElementById('coverageBadgeText');
+    var btn = document.getElementById('predictBtn');
+    if (coverage.coverage_status === 'covered') {
+      badge.className = 'coverage-badge covered';
+      textEl.textContent = 'Model available for this region (' + coverage.model_region + ')';
+      btn.disabled = false;
+      document.getElementById('predictResult').textContent = '';
+    } else {
+      badge.className = 'coverage-badge unsupported';
+      // Required exact wording — never a low/no-risk message for uncovered regions.
+      textEl.textContent = 'No validated model for this region — prediction unavailable';
+      btn.disabled = true;
+      document.getElementById('predictResult').textContent = 'Prediction unavailable for this location.';
+    }
+  }
+
+  async function checkCoverage(locationId) {
+    renderCoverageChecking();
+    try {
+      var res = await fetch('/api/location/coverage?location_id=' + encodeURIComponent(locationId), { credentials: 'same-origin' });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Coverage check failed.');
+      renderCoverageResult(data);
+    } catch (err) {
+      selectedCoverage = null;
+      var badge = document.getElementById('coverageBadge');
+      badge.className = 'coverage-badge unsupported';
+      document.getElementById('coverageBadgeText').textContent = 'No validated model for this region — prediction unavailable';
+      document.getElementById('predictBtn').disabled = true;
+    }
+  }
+
+  async function resolveLocation(payload) {
+    setLocStatus('Resolving location…');
+    try {
+      var res = await fetch('/api/location/resolve', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Could not resolve that location.');
+      setLocStatus('');
+      renderResolvedLocation(data);
+      await checkCoverage(data.location_id);
+    } catch (err) {
+      setLocStatus(err.message || 'Something went wrong resolving that location.', true);
+    }
+  }
+
+  document.getElementById('btnMethodCurrent').addEventListener('click', function () {
+    setLocMethod('current');
+    if (!navigator.geolocation) { setLocStatus('Geolocation is not supported by this browser.', true); return; }
+    setLocStatus('Requesting location permission…');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      resolveLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+    }, function () {
+      setLocStatus('Location access was denied or unavailable.', true);
+    }, { enableHighAccuracy: true, timeout: 8000 });
+  });
+
+  document.getElementById('btnMethodSearch').addEventListener('click', function () { setLocMethod('search'); });
+  document.getElementById('locSearchGoBtn').addEventListener('click', function () {
+    var q = document.getElementById('locSearchInput').value.trim();
+    if (!q) { setLocStatus('Type a place name to search.', true); return; }
+    resolveLocation({ query: q });
+  });
+  document.getElementById('locSearchInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('locSearchGoBtn').click();
+  });
+
+  document.getElementById('btnMethodMap').addEventListener('click', function () { setLocMethod('map'); });
+  document.getElementById('locConfirmMapBtn').addEventListener('click', function () {
+    if (!pendingPick) return;
+    resolveLocation(pendingPick);
+  });
+
+  // Demo-only prediction trigger. This is intentionally the ONLY place that
+  // ever calls /api/ml/predict from this panel, and it is gated on
+  // canRequestPrediction() — there is no path from an 'unsupported' location
+  // to this fetch.
+  document.getElementById('predictBtn').addEventListener('click', async function () {
+    if (!canRequestPrediction()) return; // belt-and-suspenders: UI already disables this button when uncovered
+    var resultEl = document.getElementById('predictResult');
+    resultEl.textContent = 'Running…';
+    try {
+      var res = await fetch('/api/ml/predict', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location_id: selectedLocation.location_id,
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude
+        })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Prediction failed.');
+      latestPrediction = data;
+      renderM3Result(data);
+      resultEl.textContent = 'Prediction updated for ' + (selectedLocation.place_name || 'the selected location') + '.';
+
+      // Zone Engine: turn this M3 prediction into Red/Yellow/Green rings,
+      // drawn on the Risk map and centered on the selected location.
+      var zone = await fetchAndRenderZones(selectedLocation.location_id, data.risk_level, data.flood_probability);
+      if (zone) {
+        resultEl.textContent += ' Zones drawn on Risk map.';
+      }
+      // A fresh prediction changes the risk level a zone check would use —
+      // any earlier zone-status result is now stale.
+      resetZoneStatus();
+    } catch (err) {
+      resultEl.textContent = 'Prediction unavailable: ' + err.message;
+    }
+  });
+
+  // -----------------------------------------------------------------------
+  // 6. Zone Status / User Location — reports "You are in the [X] zone" after a check.
+  // Wraps POST /api/geofence/check: takes the browser's current position,
+  // the selected location, and the most recent M3 risk_level, and reports
+  // which zone (red/yellow/green/outside) the user is currently in.
+  // -----------------------------------------------------------------------
+  var latestPrediction = null; // { flood_probability, risk_level, ... } from the last successful M3 run
+
+  function resetZoneStatus(){
+    var pill = document.getElementById('zoneStatusPill');
+    pill.className = 'zone-pill outside';
+    pill.textContent = 'Not checked';
+    document.getElementById('zoneStatusText').textContent = 'Check whether your current position falls inside a risk zone for the selected location.';
+    document.getElementById('checkZoneBtn').textContent = 'Check my current zone';
+    setZoneStatusStatus('');
+  }
+
+  function setZoneStatusStatus(text, isError){
+    var el = document.getElementById('zoneStatusStatus');
+    el.textContent = text || '';
+    el.classList.toggle('error', !!isError);
+  }
+
+  function renderZoneStatusResult(data){
+    var zone = String(data.current_zone || 'outside').toLowerCase();
+    var label = zone.charAt(0).toUpperCase() + zone.slice(1);
+    var pill = document.getElementById('zoneStatusPill');
+    pill.className = 'zone-pill ' + zone;
+    pill.textContent = label;
+    document.getElementById('zoneStatusText').textContent =
+      'You are in the ' + label + ' zone' + (data.place_name ? ' for ' + data.place_name : '') + '.';
+    document.getElementById('checkZoneBtn').textContent = 'You are in the ' + label + ' zone — recheck';
+    var row = document.getElementById('zoneStatusFreshnessRow');
+    if (row) row.innerHTML = data.water_level_freshness ? freshnessBadgeHtml(data.water_level_freshness, 'Water level') : '';
+  }
+
+  // Shared by the manual "check now" button and the realtime polling loop
+  // below, so both go through the exact same request/response handling.
+  var lastZoneCheckCoords = null; // { latitude, longitude } — reused by polling so it doesn't re-prompt for location
+  async function runZoneStatusCheck(latitude, longitude, silent){
+    if (!selectedLocation || !latestPrediction) return;
+    lastZoneCheckCoords = { latitude: latitude, longitude: longitude };
+    if (!silent) setZoneStatusStatus('Getting your current position…');
+    try {
+      var res = await fetch('/api/geofence/check', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location_id: selectedLocation.location_id,
+          latitude: latitude,
+          longitude: longitude,
+          risk_level: latestPrediction.risk_level,
+          probability: latestPrediction.flood_probability
+        })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Unable to check zone status.');
+      renderZoneStatusResult(data);
+      if (!silent) setZoneStatusStatus('');
+    } catch (err) {
+      if (!silent) setZoneStatusStatus(err.message || 'Unable to check zone status.', true);
+    }
+  }
+
+  document.getElementById('checkZoneBtn').addEventListener('click', function () {
+    if (!selectedLocation) { setZoneStatusStatus('Select a location above first.', true); return; }
+    if (!latestPrediction) { setZoneStatusStatus('Run an M3 prediction above first, so a risk level is available.', true); return; }
+    if (!navigator.geolocation) { setZoneStatusStatus('Geolocation is not supported by this browser.', true); return; }
+    setZoneStatusStatus('Getting your current position…');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      runZoneStatusCheck(pos.coords.latitude, pos.coords.longitude, false);
+    }, function () {
+      setZoneStatusStatus('Location access was denied or unavailable.', true);
+    }, { enableHighAccuracy: true, timeout: 8000 });
+  });
+
+  // -----------------------------------------------------------------------
+  // Dev/demo-only mock sensor feed panel — see services/mockSensorFeed.js
+  // and routes/devSensorFeed.js. Inserts synthetic readings so the
+  // realtime polling loop below has something new to show during a demo.
+  // Clearly labeled everywhere it appears: NOT a real IoT ingestion path.
+  // -----------------------------------------------------------------------
+  var devSensorFeedLocationId = null;
+  var devSensorAutoHandle = null;
+
+  function setDevSensorFeedStatus(text, isError){
+    var el = document.getElementById('devSensorFeedStatus');
+    el.textContent = text || '';
+    el.classList.toggle('error', !!isError);
+  }
+
+  function enableDevSensorFeedPanel(locationId){
+    devSensorFeedLocationId = locationId;
+    document.getElementById('devSensorFeedBtn').disabled = !locationId;
+    document.getElementById('devSensorAutoToggle').disabled = !locationId;
+    setDevSensorFeedStatus('');
+  }
+
+  async function triggerMockSensorFeed(silent){
+    if (!devSensorFeedLocationId) return;
+    if (!silent) setDevSensorFeedStatus('Inserting mock readings…');
+    try {
+      var res = await fetch('/api/dev/mock-sensor-feed/trigger', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location_id: devSensorFeedLocationId })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Unable to insert mock sensor readings.');
+      setDevSensorFeedStatus(
+        'Inserted at ' + new Date(data.timestamp).toLocaleTimeString() +
+        ' — rainfall ' + data.rainfall.window_1h + 'mm/1h, level ' + data.water_level.level_m + 'm, soil ' + data.soil_moisture.moisture_pct + '%.'
+      );
+      // Let the realtime polling loop pick up the new rows on its own
+      // cadence rather than forcing every card to re-fetch here too.
+    } catch (err) {
+      setDevSensorFeedStatus(err.message || 'Unable to insert mock sensor readings.', true);
+    }
+  }
+
+  document.getElementById('devSensorFeedBtn').addEventListener('click', function(){ triggerMockSensorFeed(false); });
+
+  document.getElementById('devSensorAutoToggle').addEventListener('change', function(e){
+    if (devSensorAutoHandle) { clearInterval(devSensorAutoHandle); devSensorAutoHandle = null; }
+    if (e.target.checked) {
+      triggerMockSensorFeed(true);
+      devSensorAutoHandle = setInterval(function(){ triggerMockSensorFeed(true); }, 60000);
+    }
+  });
+
+  // -----------------------------------------------------------------------
+  // Realtime polling loop — re-fetches coverage, M3, zones, geofence, and
+  // M1/M2/M4/M5 for the currently selected location on an interval, so the
+  // dashboard updates in place without a full page reload. Every module's
+  // own logic is untouched here: this only re-calls the same GETs the
+  // manual buttons already call (POST /api/ml/predict for M3, same as the
+  // Predict button) and re-renders with the existing render*() functions.
+  // -----------------------------------------------------------------------
+  var REALTIME_POLL_MS = 45000;
+  var realtimePollHandle = null;
+
+  function setLiveIndicator(on, text){
+    var el = document.getElementById('liveIndicator');
+    var textEl = document.getElementById('liveIndicatorText');
+    if (!el || !textEl) return;
+    el.classList.toggle('paused', !on);
+    textEl.textContent = text || (on ? 'Live · updating' : 'Live updates off');
+  }
+
+  async function realtimePollTick(){
+    if (!selectedLocation || !selectedLocation.location_id) return;
+    var locationId = selectedLocation.location_id;
+    setLiveIndicator(true, 'Live · updating…');
+
+    // Coverage status can change (e.g. another operator adjusts config),
+    // so re-check it the same way checkCoverage() does on selection.
+    try { await checkCoverage(locationId); } catch (e) { /* non-fatal */ }
+
+    // M3: only if this location is eligible, using the same demo-only
+    // predict call the button uses — no new endpoint, no logic change.
+    if (canRequestPrediction()) {
+      try {
+        var res = await fetch('/api/ml/predict', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location_id: selectedLocation.location_id,
+            latitude: selectedLocation.latitude,
+            longitude: selectedLocation.longitude
+          })
+        });
+        var data = await res.json();
+        if (res.ok) {
+          latestPrediction = data;
+          renderM3Result(data);
+          await fetchAndRenderZones(selectedLocation.location_id, data.risk_level, data.flood_probability);
+        }
+      } catch (e) { /* non-fatal — leave last-known M3/zone state on screen */ }
+    }
+
+    // Geofence check: only if the user has already run one manually once
+    // this session (so polling never triggers a surprise permission
+    // prompt) — reuse the last known position rather than re-requesting it.
+    if (lastZoneCheckCoords && latestPrediction) {
+      runZoneStatusCheck(lastZoneCheckCoords.latitude, lastZoneCheckCoords.longitude, true);
+    }
+
+    // M1/M2/M4/M5 — all lightweight "latest" GETs already used on
+    // selection; re-run them the same way.
+    loadM1Card(locationId);
+    loadM2Card(locationId);
+    loadM4Card(locationId);
+    loadM5Card(locationId);
+
+    setLiveIndicator(true, 'Live · updated ' + new Date().toLocaleTimeString());
+  }
+
+  function startRealtimePolling(){
+    stopRealtimePolling();
+    realtimePollHandle = setInterval(realtimePollTick, REALTIME_POLL_MS);
+    setLiveIndicator(true);
+  }
+
+  function stopRealtimePolling(){
+    if (realtimePollHandle) { clearInterval(realtimePollHandle); realtimePollHandle = null; }
+    setLiveIndicator(false);
+  }
+
+  // Pause polling while the tab is hidden, resume when it's visible again —
+  // no point re-fetching a dashboard nobody's looking at.
+  document.addEventListener('visibilitychange', function(){
+    if (!selectedLocation) return;
+    if (document.hidden) { stopRealtimePolling(); }
+    else { startRealtimePolling(); }
+  });
+</script>
+
+  <div id="zoneDemoAlertBanner" class="zone-demo-alert-banner" role="alert" aria-live="assertive">
+    <div class="title" id="zoneDemoAlertTitle"></div>
+    <div class="body" id="zoneDemoAlertBody"></div>
+  </div>
+
+</body>
+</html>

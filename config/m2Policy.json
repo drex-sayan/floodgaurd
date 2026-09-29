@@ -1,0 +1,10 @@
+{
+  "_comment": "M2 Anomaly/Event Detector policy for the FloodGuard MVP. Edit this file to retune the rule-based detection thresholds -- no code changes required, just restart the server (same reload rule as config/zonePolicy.json and config/alertPolicy.json). This is a rule-based stand-in for real video-based event classification (see services/m2Detect.js) -- an event is flagged when EITHER rise_rate_m_per_hr or rainfall_1h (mm) from the location's latest mock readings exceeds its threshold. saturation_headroom controls how far past the threshold (as a fraction of the threshold) a value must be before anomaly_score/confidence saturate at 1.0 -- e.g. 1.0 means they max out once the value is double the threshold. These are prototype placeholder numbers, not validated operational thresholds.",
+
+  "m2_policy_version": "m2-policy-v1.0",
+
+  "rise_rate_threshold_m_per_hr": 0.35,
+  "rainfall_1h_threshold_mm": 20,
+  "saturation_headroom": 1.0,
+  "base_confidence": 0.55
+}

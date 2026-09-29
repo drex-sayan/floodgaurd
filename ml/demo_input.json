@@ -1,0 +1,23 @@
+{
+  "station_id": 2.0,
+  "latitude": 30.2844,
+  "longitude": 78.9811,
+  "elevation_m": 895.0,
+  "slope_deg": 24.0,
+  "rainfall_1h": 2.263,
+  "rainfall_3h": 6.35,
+  "rainfall_6h": 12.416,
+  "rainfall_12h": 20.273,
+  "rainfall_24h": 40.67,
+  "soil_moisture": 0.3326,
+  "moisture_change_3h": -0.0158,
+  "water_level_m": 440.217,
+  "water_level_lag1h": 440.217,
+  "water_level_lag3h": 440.17,
+  "water_level_lag6h": 440.165,
+  "water_level_change_1h": 0.001,
+  "water_level_change_3h": 0.047,
+  "rise_rate_m_per_hour": 0.001,
+  "recent_event_count": 1.0,
+  "event_proximity_km": 5.54
+}
