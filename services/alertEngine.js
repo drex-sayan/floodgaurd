@@ -28,7 +28,9 @@ async function fetchUserPrefs(pool, userId) {
   // A user may have created an account but never explicitly saved
   // notification preferences.
   const [rows] = await pool.execute(
-    `SELECT p.sms_enabled, p.email_enabled, p.phone_number,
+    `SELECT COALESCE(p.sms_enabled, 0) AS sms_enabled, 
+            COALESCE(p.email_enabled, 1) AS email_enabled, 
+            p.phone_number,
             COALESCE(NULLIF(p.email_address, ''), u.email) AS email_address
      FROM users u
      LEFT JOIN user_notification_prefs p ON p.user_id = u.id
