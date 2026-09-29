@@ -12,6 +12,10 @@
     {
       "src": "*.css",
       "use": "@vercel/static"
+    },
+    {
+      "src": "auth.js",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -30,6 +34,14 @@
     {
       "src": "/style.css",
       "dest": "/style.css"
+    },
+    {
+      "src": "/auth.js",
+      "dest": "/auth.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
     },
     {
       "src": "/(.*)",
